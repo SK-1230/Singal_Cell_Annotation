@@ -1,0 +1,85 @@
+# =========================
+# Python cache
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# =========================
+# Build / packaging
+# =========================
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# =========================
+# Virtual environments
+# =========================
+.venv/
+venv/
+env/
+ENV/
+
+# =========================
+# Jupyter / notebooks
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# IDE / editor
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Logs / temp files
+# =========================
+*.log
+*.tmp
+*.swp
+*.swo
+
+# =========================
+# Model files
+# =========================
+my_models/
+output/
+
+# =========================
+# Data files
+# =========================
+data/raw_h5ad/
+data/clean_h5ad/
+data/intermediate/
+data/sft/
+data/splits/
+
+# 如果你不想上传 meta 里的自动生成文件，也可以一起忽略
+# data/meta/
+
+# =========================
+# Large data formats
+# =========================
+*.h5ad
+*.h5
+*.loom
+*.npz
+*.pt
+*.pth
+*.bin
+*.safetensors
+
+# =========================
+# Optional: keep small metadata files
+# =========================
+!data/
+!data/meta/
+!data/meta/*.csv
+!data/meta/*.txt
