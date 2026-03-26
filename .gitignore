@@ -60,6 +60,7 @@ data/clean_h5ad/
 data/intermediate/
 data/sft/
 data/splits/
+data/meta/
 
 # 如果你不想上传 meta 里的自动生成文件，也可以一起忽略
 # data/meta/
@@ -83,3 +84,7 @@ data/splits/
 !data/meta/
 !data/meta/*.csv
 !data/meta/*.txt
+
+
+
+
