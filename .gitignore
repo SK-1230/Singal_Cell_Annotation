@@ -85,6 +85,12 @@ data/meta/
 !data/meta/*.csv
 !data/meta/*.txt
 
+# =========================
+# Next tasks for update code
+# =========================
+sca_next_stage_technical_spec_for_claude_code_v2.md
 
 
 
+data/meta/*.csv
+data/meta/*.h5ad

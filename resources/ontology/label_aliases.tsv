@@ -1,0 +1,139 @@
+raw_label	normalized_label	cell_ontology_id	parent_label	notes
+T cells	t cell	CL:0000084	lymphocyte	plural alias
+B cells	b cell	CL:0000236	lymphocyte	plural alias
+NK cells	nk cell	CL:0000623	lymphocyte	plural alias
+natural killer cells	nk cell	CL:0000623	lymphocyte	full name alias
+natural killer cell	nk cell	CL:0000623	lymphocyte	full name alias
+NK	nk cell	CL:0000623	lymphocyte	abbreviation alias
+T cell	t cell	CL:0000084	lymphocyte	canonical
+B cell	b cell	CL:0000236	lymphocyte	canonical
+NK cell	nk cell	CL:0000623	lymphocyte	canonical
+cd4 t cells	cd4-positive t cell	CL:0000624	t cell	plural alias
+cd8 t cells	cd8-positive t cell	CL:0000625	t cell	plural alias
+CD4+ T cells	cd4-positive t cell	CL:0000624	t cell	plural alias with marker
+CD8+ T cells	cd8-positive t cell	CL:0000625	t cell	plural alias with marker
+CD4+ T cell	cd4-positive t cell	CL:0000624	t cell	alias with marker
+CD8+ T cell	cd8-positive t cell	CL:0000625	t cell	alias with marker
+cd4+ t cell	cd4-positive t cell	CL:0000624	t cell	case variant
+cd8+ t cell	cd8-positive t cell	CL:0000625	t cell	case variant
+cd4-positive t cell	cd4-positive t cell	CL:0000624	t cell	canonical
+cd8-positive t cell	cd8-positive t cell	CL:0000625	t cell	canonical
+helper T cell	cd4-positive t cell	CL:0000624	t cell	functional name
+cytotoxic T cell	cd8-positive t cell	CL:0000625	t cell	functional name
+cytotoxic t lymphocyte	cd8-positive t cell	CL:0000625	t cell	full name
+CTL	cd8-positive t cell	CL:0000625	t cell	abbreviation
+regulatory T cell	regulatory t cell	CL:0000815	t cell	canonical
+regulatory t cells	regulatory t cell	CL:0000815	t cell	plural alias
+Treg	regulatory t cell	CL:0000815	t cell	abbreviation
+Tregs	regulatory t cell	CL:0000815	t cell	plural abbreviation
+Treg cell	regulatory t cell	CL:0000815	t cell	alias
+naive T cell	naive t cell	CL:0000898	t cell	canonical
+memory T cell	memory t cell	CL:0000813	t cell	canonical
+naive t cells	naive t cell	CL:0000898	t cell	plural alias
+memory t cells	memory t cell	CL:0000813	t cell	plural alias
+effector T cell	effector t cell	CL:0000911	t cell	canonical
+effector t cells	effector t cell	CL:0000911	t cell	plural alias
+plasma cell	plasma cell	CL:0000786	b cell	canonical
+plasma cells	plasma cell	CL:0000786	b cell	plural alias
+plasmablast	plasmablast	CL:0000980	b cell	canonical
+memory B cell	memory b cell	CL:0000787	b cell	canonical
+memory b cells	memory b cell	CL:0000787	b cell	plural alias
+naive B cell	naive b cell	CL:0000788	b cell	canonical
+naive b cells	naive b cell	CL:0000788	b cell	plural alias
+monocyte	monocyte	CL:0000576	myeloid cell	canonical
+monocytes	monocyte	CL:0000576	myeloid cell	plural alias
+classical monocyte	classical monocyte	CL:0000860	monocyte	canonical
+non-classical monocyte	non-classical monocyte	CL:0000875	monocyte	canonical
+non classical monocyte	non-classical monocyte	CL:0000875	monocyte	alias
+macrophage	macrophage	CL:0000235	myeloid cell	canonical
+macrophages	macrophage	CL:0000235	myeloid cell	plural alias
+dendritic cell	dendritic cell	CL:0000451	myeloid cell	canonical
+dendritic cells	dendritic cell	CL:0000451	myeloid cell	plural alias
+DC	dendritic cell	CL:0000451	myeloid cell	abbreviation
+plasmacytoid dendritic cell	plasmacytoid dendritic cell	CL:0000784	dendritic cell	canonical
+pDC	plasmacytoid dendritic cell	CL:0000784	dendritic cell	abbreviation
+conventional dendritic cell	conventional dendritic cell	CL:0000990	dendritic cell	canonical
+cDC	conventional dendritic cell	CL:0000990	dendritic cell	abbreviation
+cDC1	type 1 conventional dendritic cell	CL:0000990	dendritic cell	subtype
+cDC2	type 2 conventional dendritic cell	CL:0000990	dendritic cell	subtype
+neutrophil	neutrophil	CL:0000775	myeloid cell	canonical
+neutrophils	neutrophil	CL:0000775	myeloid cell	plural alias
+mast cell	mast cell	CL:0000097	myeloid cell	canonical
+mast cells	mast cell	CL:0000097	myeloid cell	plural alias
+eosinophil	eosinophil	CL:0000771	myeloid cell	canonical
+eosinophils	eosinophil	CL:0000771	myeloid cell	plural alias
+basophil	basophil	CL:0000767	myeloid cell	canonical
+basophils	basophil	CL:0000767	myeloid cell	plural alias
+erythrocyte	erythrocyte	CL:0000232	erythroid cell	canonical
+erythrocytes	erythrocyte	CL:0000232	erythroid cell	plural alias
+red blood cell	erythrocyte	CL:0000232	erythroid cell	common name
+red blood cells	erythrocyte	CL:0000232	erythroid cell	common name plural
+RBC	erythrocyte	CL:0000232	erythroid cell	abbreviation
+platelet	platelet	CL:0000233	megakaryocyte-erythroid progenitor cell	canonical
+platelets	platelet	CL:0000233	megakaryocyte-erythroid progenitor cell	plural alias
+megakaryocyte	megakaryocyte	CL:0000556	megakaryocyte-erythroid progenitor cell	canonical
+megakaryocytes	megakaryocyte	CL:0000556	megakaryocyte-erythroid progenitor cell	plural alias
+hematopoietic stem cell	hematopoietic stem cell	CL:0000037	progenitor cell	canonical
+HSC	hematopoietic stem cell	CL:0000037	progenitor cell	abbreviation
+hematopoietic progenitor	hematopoietic progenitor cell	CL:0000051	progenitor cell	canonical
+progenitor cell	progenitor cell	CL:0000051	stem cell	canonical
+epithelial cell	epithelial cell	CL:0000066	somatic cell	canonical
+epithelial cells	epithelial cell	CL:0000066	somatic cell	plural alias
+enterocyte	enterocyte	CL:0000584	epithelial cell	canonical
+enterocytes	enterocyte	CL:0000584	epithelial cell	plural alias
+colonocyte	colonocyte	CL:0000584	epithelial cell	alias for large intestine enterocyte
+goblet cell	goblet cell	CL:0000160	epithelial cell	canonical
+goblet cells	goblet cell	CL:0000160	epithelial cell	plural alias
+hepatocyte	hepatocyte	CL:0000182	epithelial cell	canonical
+hepatocytes	hepatocyte	CL:0000182	epithelial cell	plural alias
+cholangiocyte	cholangiocyte	CL:1000488	epithelial cell	canonical
+cholangiocytes	cholangiocyte	CL:1000488	epithelial cell	plural alias
+bile duct cell	cholangiocyte	CL:1000488	epithelial cell	alias
+alveolar cell	alveolar cell	CL:0000322	epithelial cell	canonical
+type I pneumocyte	alveolar type 1 cell	CL:0002062	alveolar cell	canonical
+type II pneumocyte	alveolar type 2 cell	CL:0002063	alveolar cell	canonical
+AT1 cell	alveolar type 1 cell	CL:0002062	alveolar cell	abbreviation
+AT2 cell	alveolar type 2 cell	CL:0002063	alveolar cell	abbreviation
+club cell	club cell	CL:0000158	epithelial cell	canonical
+ciliated cell	ciliated cell	CL:0000064	epithelial cell	canonical
+ciliated epithelial cell	ciliated cell	CL:0000064	epithelial cell	alias
+basal cell	basal cell	CL:0000646	epithelial cell	canonical
+basal cells	basal cell	CL:0000646	epithelial cell	plural alias
+endothelial cell	endothelial cell	CL:0000115	somatic cell	canonical
+endothelial cells	endothelial cell	CL:0000115	somatic cell	plural alias
+fibroblast	fibroblast	CL:0000057	stromal cell	canonical
+fibroblasts	fibroblast	CL:0000057	stromal cell	plural alias
+smooth muscle cell	smooth muscle cell	CL:0000192	stromal cell	canonical
+smooth muscle cells	smooth muscle cell	CL:0000192	stromal cell	plural alias
+pericyte	pericyte	CL:0000669	stromal cell	canonical
+pericytes	pericyte	CL:0000669	stromal cell	plural alias
+stellate cell	stellate cell	CL:0000653	stromal cell	canonical
+hepatic stellate cell	hepatic stellate cell	CL:0000632	stellate cell	canonical
+hepatic stellate cells	hepatic stellate cell	CL:0000632	stellate cell	plural alias
+neuron	neuron	CL:0000540	neural cell	canonical
+neurons	neuron	CL:0000540	neural cell	plural alias
+glial cell	glial cell	CL:0000125	neural cell	canonical
+astrocyte	astrocyte	CL:0000127	glial cell	canonical
+astrocytes	astrocyte	CL:0000127	glial cell	plural alias
+oligodendrocyte	oligodendrocyte	CL:0000128	glial cell	canonical
+oligodendrocytes	oligodendrocyte	CL:0000128	glial cell	plural alias
+microglia	microglial cell	CL:0000129	glial cell	singular/plural ambiguous
+microglial cell	microglial cell	CL:0000129	glial cell	canonical
+microglial cells	microglial cell	CL:0000129	glial cell	plural alias
+Kupffer cell	Kupffer cell	CL:0000599	macrophage	canonical
+Kupffer cells	Kupffer cell	CL:0000599	macrophage	plural alias
+innate lymphoid cell	innate lymphoid cell	CL:0001065	lymphocyte	canonical
+innate lymphoid cells	innate lymphoid cell	CL:0001065	lymphocyte	plural alias
+ILC	innate lymphoid cell	CL:0001065	lymphocyte	abbreviation
+myeloid cell	myeloid cell	CL:0000763	leukocyte	canonical
+myeloid cells	myeloid cell	CL:0000763	leukocyte	plural alias
+lymphocyte	lymphocyte	CL:0000542	leukocyte	canonical
+lymphocytes	lymphocyte	CL:0000542	leukocyte	plural alias
+leukocyte	leukocyte	CL:0000738	immune cell	canonical
+leukocytes	leukocyte	CL:0000738	immune cell	plural alias
+white blood cell	leukocyte	CL:0000738	immune cell	common name
+white blood cells	leukocyte	CL:0000738	immune cell	common name plural
+stromal cell	stromal cell	CL:0000499	somatic cell	canonical
+stromal cells	stromal cell	CL:0000499	somatic cell	plural alias
+adipocyte	adipocyte	CL:0000136	stromal cell	canonical
+adipocytes	adipocyte	CL:0000136	stromal cell	plural alias

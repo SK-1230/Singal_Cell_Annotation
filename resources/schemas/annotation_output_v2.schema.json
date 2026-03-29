@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AnnotationOutputV2",
+  "description": "Schema for SCA-Specialist annotation output v2 — evidence-grounded, ontology-aware.",
+  "type": "object",
+  "required": [
+    "cell_type",
+    "cell_ontology_id",
+    "parent_cell_type",
+    "supporting_markers",
+    "contradictory_markers",
+    "confidence_label",
+    "confidence_score",
+    "need_manual_review",
+    "decision",
+    "novelty_flag",
+    "evidence_support_level",
+    "rationale"
+  ],
+  "properties": {
+    "cell_type": {
+      "type": "string",
+      "description": "Predicted cell type label (normalized, lowercase)."
+    },
+    "cell_ontology_id": {
+      "type": ["string", "null"],
+      "description": "Cell Ontology ID (e.g. CL:0000084), null if unmapped."
+    },
+    "parent_cell_type": {
+      "type": ["string", "null"],
+      "description": "Broad parent cell type label."
+    },
+    "supporting_markers": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Gene names that support this annotation."
+    },
+    "contradictory_markers": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Gene names that are inconsistent with this annotation."
+    },
+    "confidence_label": {
+      "type": "string",
+      "enum": ["high", "medium", "low"],
+      "description": "Categorical confidence estimate."
+    },
+    "confidence_score": {
+      "type": ["number", "null"],
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Numeric confidence score [0, 1]. Null if not available."
+    },
+    "need_manual_review": {
+      "type": "boolean",
+      "description": "Whether this annotation requires human review."
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["accept", "review", "unresolved", "novel_candidate"],
+      "description": "Recommended action on this annotation."
+    },
+    "novelty_flag": {
+      "type": "boolean",
+      "description": "Whether the predicted state appears to be rare or potentially novel."
+    },
+    "evidence_support_level": {
+      "type": "string",
+      "enum": ["strong", "moderate", "weak", "conflicting"],
+      "description": "Overall evidence support strength."
+    },
+    "rationale": {
+      "type": "string",
+      "description": "Short free-text rationale for the prediction."
+    }
+  },
+  "additionalProperties": false
+}

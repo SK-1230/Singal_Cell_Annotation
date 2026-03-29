@@ -1,0 +1,58 @@
+{"cell_ontology_id": "CL:0000037", "label": "hematopoietic stem cell", "synonyms": ["HSC"], "parent_label": "progenitor cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000051", "label": "hematopoietic progenitor cell", "synonyms": ["progenitor cell"], "parent_label": "progenitor cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000057", "label": "fibroblast", "synonyms": ["fibroblasts"], "parent_label": "stromal cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000064", "label": "ciliated cell", "synonyms": ["ciliated epithelial cell"], "parent_label": "epithelial cell", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000066", "label": "epithelial cell", "synonyms": ["epithelial cells"], "parent_label": "somatic cell", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000084", "label": "t cell", "synonyms": ["T cell"], "parent_label": "lymphocyte", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000097", "label": "mast cell", "synonyms": ["mast cells"], "parent_label": "myeloid cell", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000115", "label": "endothelial cell", "synonyms": ["endothelial cells"], "parent_label": "somatic cell", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000125", "label": "glial cell", "synonyms": [], "parent_label": "neural cell", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000127", "label": "astrocyte", "synonyms": ["astrocytes"], "parent_label": "glial cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000128", "label": "oligodendrocyte", "synonyms": ["oligodendrocytes"], "parent_label": "glial cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000129", "label": "microglial cell", "synonyms": ["microglial cell", "microglial cells"], "parent_label": "glial cell", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000136", "label": "adipocyte", "synonyms": ["adipocytes"], "parent_label": "stromal cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000158", "label": "club cell", "synonyms": [], "parent_label": "epithelial cell", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000160", "label": "goblet cell", "synonyms": ["goblet cells"], "parent_label": "epithelial cell", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000182", "label": "hepatocyte", "synonyms": ["hepatocytes"], "parent_label": "epithelial cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000192", "label": "smooth muscle cell", "synonyms": ["smooth muscle cells"], "parent_label": "stromal cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000232", "label": "erythrocyte", "synonyms": ["RBC", "erythrocytes", "red blood cell", "red blood cells"], "parent_label": "erythroid cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000233", "label": "platelet", "synonyms": ["platelets"], "parent_label": "megakaryocyte-erythroid progenitor cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000235", "label": "macrophage", "synonyms": ["macrophages"], "parent_label": "myeloid cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000236", "label": "b cell", "synonyms": ["B cell"], "parent_label": "lymphocyte", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000322", "label": "alveolar cell", "synonyms": [], "parent_label": "epithelial cell", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000451", "label": "dendritic cell", "synonyms": ["DC", "dendritic cells"], "parent_label": "myeloid cell", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000499", "label": "stromal cell", "synonyms": ["stromal cells"], "parent_label": "somatic cell", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000540", "label": "neuron", "synonyms": ["neurons"], "parent_label": "neural cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000542", "label": "lymphocyte", "synonyms": ["lymphocytes"], "parent_label": "leukocyte", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000556", "label": "megakaryocyte", "synonyms": ["megakaryocytes"], "parent_label": "megakaryocyte-erythroid progenitor cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000576", "label": "monocyte", "synonyms": ["monocytes"], "parent_label": "myeloid cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000584", "label": "enterocyte", "synonyms": ["colonocyte", "enterocytes"], "parent_label": "epithelial cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000599", "label": "Kupffer cell", "synonyms": ["Kupffer cells"], "parent_label": "macrophage", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000623", "label": "nk cell", "synonyms": ["NK", "NK cell", "natural killer cell", "natural killer cells"], "parent_label": "lymphocyte", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000624", "label": "cd4-positive t cell", "synonyms": ["CD4+ T cell", "CD4+ T cells", "cd4+ t cell", "cd4-positive t cell", "helper T cell"], "parent_label": "t cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000625", "label": "cd8-positive t cell", "synonyms": ["CD8+ T cell", "CD8+ T cells", "CTL", "cd8+ t cell", "cd8-positive t cell", "cytotoxic T cell", "cytotoxic t lymphocyte"], "parent_label": "t cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000632", "label": "hepatic stellate cell", "synonyms": ["hepatic stellate cells"], "parent_label": "stellate cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000646", "label": "basal cell", "synonyms": ["basal cells"], "parent_label": "epithelial cell", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000653", "label": "stellate cell", "synonyms": [], "parent_label": "stromal cell", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000669", "label": "pericyte", "synonyms": ["pericytes"], "parent_label": "stromal cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000738", "label": "leukocyte", "synonyms": ["leukocytes", "white blood cell", "white blood cells"], "parent_label": "immune cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000763", "label": "myeloid cell", "synonyms": ["myeloid cells"], "parent_label": "leukocyte", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000767", "label": "basophil", "synonyms": ["basophils"], "parent_label": "myeloid cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000771", "label": "eosinophil", "synonyms": ["eosinophils"], "parent_label": "myeloid cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000775", "label": "neutrophil", "synonyms": ["neutrophils"], "parent_label": "myeloid cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000784", "label": "plasmacytoid dendritic cell", "synonyms": ["pDC"], "parent_label": "dendritic cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000786", "label": "plasma cell", "synonyms": ["plasma cells"], "parent_label": "b cell", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000787", "label": "memory b cell", "synonyms": ["memory b cells"], "parent_label": "b cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000788", "label": "naive b cell", "synonyms": ["naive b cells"], "parent_label": "b cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000813", "label": "memory t cell", "synonyms": ["memory t cells"], "parent_label": "t cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000815", "label": "regulatory t cell", "synonyms": ["Treg", "Treg cell", "Tregs", "regulatory t cells"], "parent_label": "t cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000860", "label": "classical monocyte", "synonyms": [], "parent_label": "monocyte", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000875", "label": "non-classical monocyte", "synonyms": ["non classical monocyte"], "parent_label": "monocyte", "parent_id": null, "organ_scope": null, "label_level": "intermediate"}
+{"cell_ontology_id": "CL:0000898", "label": "naive t cell", "synonyms": ["naive t cells"], "parent_label": "t cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000911", "label": "effector t cell", "synonyms": ["effector t cells"], "parent_label": "t cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000980", "label": "plasmablast", "synonyms": [], "parent_label": "b cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0000990", "label": "conventional dendritic cell", "synonyms": ["cDC", "cDC1", "cDC2"], "parent_label": "dendritic cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0001065", "label": "innate lymphoid cell", "synonyms": ["ILC", "innate lymphoid cells"], "parent_label": "lymphocyte", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0002062", "label": "alveolar type 1 cell", "synonyms": ["AT1 cell"], "parent_label": "alveolar cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:0002063", "label": "alveolar type 2 cell", "synonyms": ["AT2 cell"], "parent_label": "alveolar cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}
+{"cell_ontology_id": "CL:1000488", "label": "cholangiocyte", "synonyms": ["bile duct cell", "cholangiocytes"], "parent_label": "epithelial cell", "parent_id": null, "organ_scope": null, "label_level": "leaf"}

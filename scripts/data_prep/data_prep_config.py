@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 # =========================================================
 # data_prep_config.py — 数据预处理全流程统一配置
 #
-# 覆盖脚本：01 ~ 06
+# 覆盖脚本：01 ~ 08
 # 使用方式：在各脚本中 `import data_prep_config as cfg`
 # 路径说明：本文件位于 scripts/data_prep/，PROJECT_DIR 自动指向项目根目录
 # =========================================================
@@ -24,7 +25,16 @@ INTERMEDIATE_DIR = DATA_DIR / "intermediate"  # 04 marker 中间文件
 SFT_DIR          = DATA_DIR / "sft"           # 05 SFT 训练文件
 SPLIT_DIR        = DATA_DIR / "splits"        # 06 划分后的 train/val/test
 
-for _p in [META_DIR, RAW_H5AD_DIR, CLEAN_H5AD_DIR, INTERMEDIATE_DIR, SFT_DIR, SPLIT_DIR]:
+# Phase 1 新增目录
+RESOURCES_DIR    = PROJECT_DIR / "resources"  # 静态知识资源（ontology/markers/schemas）
+KNOWLEDGE_DIR    = DATA_DIR / "knowledge"     # 07/08 构建的运行时知识库
+
+# 确保 src/ 在 sys.path 中，以便脚本直接 import sca.*
+_SRC_DIR = PROJECT_DIR / "src"
+if str(_SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(_SRC_DIR))
+
+for _p in [META_DIR, RAW_H5AD_DIR, CLEAN_H5AD_DIR, INTERMEDIATE_DIR, SFT_DIR, SPLIT_DIR, KNOWLEDGE_DIR]:
     _p.mkdir(parents=True, exist_ok=True)
 
 
@@ -36,7 +46,7 @@ for _p in [META_DIR, RAW_H5AD_DIR, CLEAN_H5AD_DIR, INTERMEDIATE_DIR, SFT_DIR, SP
 CANDIDATE_DATASETS_CSV = META_DIR / "candidate_datasets.csv"
 
 # 01 → 生成 / 02 → 读取
-# 在自动模式下，它将直接作为“最终自动选集”
+# 在自动模式下，它将直接作为"最终自动选集"
 SELECTED_DATASETS_CSV  = META_DIR / "selected_datasets.csv"
 
 # 02 → 生成
@@ -45,13 +55,34 @@ RAW_MANIFEST_CSV       = META_DIR / "raw_export_manifest.csv"
 # 03 → 生成
 CLEAN_MANIFEST_CSV     = META_DIR / "clean_manifest.csv"
 
-# 04 → 生成 / 05 → 读取
+# 04 → 生成 / 05 → 读取（v1 原始版本，保留不变）
 MARKER_EXAMPLES_JSONL  = INTERMEDIATE_DIR / "marker_examples.jsonl"
 
-# 05 → 生成 / 06 → 读取
+# 04 v2 → 生成 / 05 v2 → 读取（Phase 1 升级版本）
+MARKER_EXAMPLES_V2_JSONL = INTERMEDIATE_DIR / "marker_examples_v2.jsonl"
+
+# 05 → 生成 / 06 → 读取（v1 原始版本，保留不变）
 SFT_RECORDS_FULL_JSONL      = SFT_DIR / "sft_records_full.jsonl"
 SFT_MESSAGES_JSONL          = SFT_DIR / "sft_messages.jsonl"
 SFT_MESSAGES_NO_THINK_JSONL = SFT_DIR / "sft_messages_no_think.jsonl"
+
+# 05 v2 → 生成（Phase 2 升级版本）
+SFT_RECORDS_FULL_V2_JSONL      = SFT_DIR / "sft_records_full_v2.jsonl"
+SFT_MESSAGES_V2_JSONL          = SFT_DIR / "sft_messages_v2.jsonl"
+SFT_MESSAGES_NO_THINK_V2_JSONL = SFT_DIR / "sft_messages_no_think_v2.jsonl"
+
+# 07 → 生成
+ONTOLOGY_INDEX_JSONL     = KNOWLEDGE_DIR / "ontology_index.jsonl"
+CELL_ONTOLOGY_MIN_JSONL  = RESOURCES_DIR / "ontology" / "cell_ontology_min.jsonl"
+
+# 08 → 生成
+TRAIN_MARKER_KB_JSONL    = KNOWLEDGE_DIR / "train_marker_kb.jsonl"
+MERGED_MARKER_KB_JSONL   = KNOWLEDGE_DIR / "merged_marker_kb.jsonl"
+
+# ontology 资源文件（Phase 1 新增）
+LABEL_ALIASES_TSV     = RESOURCES_DIR / "ontology" / "label_aliases.tsv"
+ORGAN_HIERARCHY_TSV   = RESOURCES_DIR / "ontology" / "organ_hierarchy.tsv"
+EXTERNAL_MARKER_KB_JSONL = RESOURCES_DIR / "markers" / "external_marker_kb.jsonl"
 
 
 # =========================================================
@@ -111,10 +142,10 @@ AUTO_SELECTED_MAX_DATASETS = 40
 # 如果按 tissue 配额选完后仍不足该数量，会从全局候选中继续补齐
 AUTO_SELECTED_MIN_DATASETS = 24
 
-# 是否优先偏好“单 tissue”数据集
+# 是否优先偏好"单 tissue"数据集
 AUTO_PREFER_SINGLE_TISSUE = True
 
-# 是否优先偏好“单 disease/低混杂”数据集
+# 是否优先偏好"单 disease/低混杂"数据集
 AUTO_PREFER_LOW_DISEASE_MIX = True
 
 # 自动打分时，对不同因素的权重
@@ -198,8 +229,11 @@ MAX_CELLS_PER_LABEL_FOR_DE = 2_000
 # rank_genes_groups 计算时最多保留的候选基因数
 MAX_CANDIDATE_MARKERS = 50
 
-# 最终写入训练样本的 Top-K marker 基因数
+# 最终写入训练样本的 Top-K marker 基因数（正向 marker）
 TOP_K_MARKERS = 10
+
+# v2：负向 marker（低表达基因）保留数量
+TOP_K_NEGATIVE_MARKERS = 5
 
 # 每个标签至少需要满足数量的有效 marker 基因，否则跳过该标签
 MARKER_MIN_TOP_GENES = 5
@@ -209,6 +243,19 @@ MARKER_MIN_GENE_CELLS = 5
 
 # True = 每处理完一个 h5ad 文件就写一次 JSONL（防中断）
 MARKER_WRITE_JSONL_EVERY_FILE = True
+
+# Phase 1 v2：差异分析方法（t-test | wilcoxon）
+# 改为 wilcoxon 更稳健，对非正态分布数据更合适
+MARKER_DE_METHOD = "wilcoxon"
+
+# Phase 1 v2：标记低细胞数的阈值（用于 hardness_flags.low_cells）
+MARKER_LOW_CELLS_THRESHOLD = 100
+
+# Phase 1 v2：标记低 marker 质量分的阈值（用于 hardness_flags.low_marker_quality）
+MARKER_LOW_QUALITY_SCORE_THRESHOLD = 0.3
+
+# Phase 1 v2：稀有标签判断阈值（数据集内该标签占比低于此值）
+MARKER_RARE_LABEL_FRACTION_THRESHOLD = 0.02
 
 # 黑名单：高丰度但低信息量的基因，不作为 marker 输出
 UNINFORMATIVE_GENES = {
@@ -244,7 +291,7 @@ RANDOM_SEED = 42
 # train / val / test 划分比例（按 dataset_id 级别划分，防止数据泄漏）
 # 三者之和必须等于 1.0
 #
-# 对当前“自动 selected + 中等规模 dataset 数量”的场景，
+# 对当前"自动 selected + 中等规模 dataset 数量"的场景，
 # 这里建议 test 稍微高一点，便于拿到更稳定的最终评估；
 # val 可以稍小，因为在 dataset 还不算特别多时，过大的 val 会稀释 train。
 SPLIT_TRAIN_RATIO = 0.75
@@ -260,7 +307,7 @@ SPLIT_TOKEN_CHECK_MODEL = "Qwen/Qwen3-8B"
 # [06_split_and_validate_v2] V2 划分增强配置
 # =========================================================
 
-# 是否启用“按 dataset 主 tissue_general 分层切分”
+# 是否启用"按 dataset 主 tissue_general 分层切分"
 #
 # 建议：
 # - 当 01 自动 selected 出来的 dataset 总数 < 30 时：False
@@ -308,9 +355,27 @@ SPLIT_V2_HARD_TEST_RARE_CELLTYPE_MAX_COUNT = 1
 
 # 小数据集模式阈值：dataset 总数 <= 该值时，优先保证 train/test
 # 由于你现在会自动选出更多 dataset，这里可以从 5 提高到 8，
-# 让“小数据集特殊逻辑”覆盖更稳一些。
+# 让"小数据集特殊逻辑"覆盖更稳一些。
 SPLIT_V2_SMALL_DATASET_UPPER_BOUND = 8
 
 # 正常分层模式的最小 dataset 数（主要作为说明性参数）
 # 当 dataset 数量明显上来后，再考虑把 stratify 打开。
 SPLIT_V2_NORMAL_SPLIT_MIN_DATASETS = 9
+
+# Phase 2 benchmark split：全局稀有 cell type 的最大出现次数阈值
+# 跨 train+val+test 合计出现次数 <= 该值的 cell type 视为稀有，进入 test_rare 子集
+SPLIT_V2_RARE_MAX_GLOBAL_COUNT = 3
+
+
+# =========================================================
+# [Phase 3] 推理决策阈值
+# =========================================================
+
+# 最终置信分数 >= 该值时，决策为 accept
+FINAL_ACCEPT_THRESHOLD = 0.80
+
+# 最终置信分数 >= 该值（但 < FINAL_ACCEPT_THRESHOLD）时，决策为 review
+FINAL_REVIEW_THRESHOLD = 0.45
+
+# 检索最高得分 < 该值时，视为 novel-like mismatch 候选
+NOVELTY_THRESHOLD = 0.25

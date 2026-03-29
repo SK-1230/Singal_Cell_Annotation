@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import gc
+import json
 import logging
 import re
 import time
@@ -15,6 +16,22 @@ from tqdm import tqdm
 
 import data_prep_config as cfg
 
+
+
+from pathlib import Path
+import sys
+
+PROJECT_DIR = Path(__file__).resolve().parents[2]
+SRC_DIR = PROJECT_DIR / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+# Phase 1: ontology-aware label normalization
+try:
+    from sca.data.label_normalization import normalize_and_map, init_alias_table
+    _ONTOLOGY_AVAILABLE = True
+except ImportError:
+    _ONTOLOGY_AVAILABLE = False
 
 logging.basicConfig(
     level=logging.INFO,
@@ -85,6 +102,10 @@ def make_empty_record(h5ad_path: Path) -> Dict[str, Any]:
         "n_vars_after": None,
         "unique_cell_types_after": None,
         "tissues": "",
+        # Phase 1: ontology stats
+        "n_mapped_ontology_labels": None,
+        "n_unmapped_ontology_labels": None,
+        "n_unique_cl_ids": None,
         "elapsed_sec": None,
         "error": "",
     }
@@ -96,6 +117,9 @@ def get_clean_output_paths(h5ad_path: Path) -> Dict[str, Path]:
         "clean_h5ad": cfg.CLEAN_H5AD_DIR / h5ad_path.name,
         "label_counts": cfg.CLEAN_H5AD_DIR / f"{stem}.label_counts.csv",
         "label_counts_gold": cfg.CLEAN_H5AD_DIR / f"{stem}.label_counts_gold.csv",
+        # Phase 1 新增 sidecar 输出
+        "cell_type_mapping": cfg.CLEAN_H5AD_DIR / f"{stem}.cell_type_mapping.csv",
+        "dataset_profile": cfg.CLEAN_H5AD_DIR / f"{stem}.dataset_profile.json",
     }
 
 
@@ -105,12 +129,20 @@ def outputs_status(h5ad_path: Path) -> Dict[str, bool]:
         "clean_h5ad": paths["clean_h5ad"].exists(),
         "label_counts": paths["label_counts"].exists(),
         "label_counts_gold": paths["label_counts_gold"].exists(),
+        "cell_type_mapping": paths["cell_type_mapping"].exists(),
+        "dataset_profile": paths["dataset_profile"].exists(),
     }
 
 
 def all_outputs_exist(h5ad_path: Path) -> bool:
     st = outputs_status(h5ad_path)
-    return st["clean_h5ad"] and st["label_counts"] and st["label_counts_gold"]
+    return (
+        st["clean_h5ad"]
+        and st["label_counts"]
+        and st["label_counts_gold"]
+        and st["cell_type_mapping"]
+        and st["dataset_profile"]
+    )
 
 
 def save_manifest(rows: List[Dict[str, Any]]) -> None:
@@ -193,6 +225,116 @@ def load_existing_manifest() -> pd.DataFrame:
         return pd.DataFrame()
 
 
+def apply_ontology_columns(obs: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add ontology-aware columns to obs DataFrame:
+      cell_type_input_raw, cell_type_gold, cell_type_clean (already present),
+      cell_ontology_id, cell_ontology_label, cell_ontology_parent_label,
+      cell_type_status, cell_type_level
+    """
+    if not _ONTOLOGY_AVAILABLE:
+        logging.warning("sca.data.label_normalization not available — skipping ontology columns")
+        for col in ["cell_type_input_raw", "cell_ontology_id", "cell_ontology_label",
+                    "cell_ontology_parent_label", "cell_type_status", "cell_type_level"]:
+            if col not in obs.columns:
+                obs[col] = None
+        return obs
+
+    # Initialize alias table
+    init_alias_table(cfg.LABEL_ALIASES_TSV)
+
+    # cell_type_input_raw = original raw value before any normalization
+    if "cell_type_input_raw" not in obs.columns:
+        # Use cell_type_gold as proxy for raw input
+        obs["cell_type_input_raw"] = obs.get("cell_type_gold", obs.get("cell_type_clean", pd.Series([None] * len(obs), index=obs.index)))
+
+    # Map each unique clean label once for efficiency
+    unique_labels = obs["cell_type_clean"].dropna().astype(str).unique()
+    mapping_cache: Dict[str, Dict[str, Any]] = {}
+    for lbl in unique_labels:
+        mapping_cache[lbl] = normalize_and_map(lbl, tsv_path=cfg.LABEL_ALIASES_TSV)
+
+    def get_field(label_val, field: str):
+        if pd.isna(label_val):
+            return None
+        return mapping_cache.get(str(label_val), {}).get(field)
+
+    obs["cell_ontology_id"] = obs["cell_type_clean"].map(lambda x: get_field(x, "cell_ontology_id"))
+    obs["cell_ontology_label"] = obs["cell_type_clean"].map(lambda x: get_field(x, "cell_ontology_label"))
+    obs["cell_ontology_parent_label"] = obs["cell_type_clean"].map(lambda x: get_field(x, "cell_ontology_parent_label"))
+    obs["cell_type_status"] = obs["cell_type_clean"].map(lambda x: get_field(x, "cell_type_status"))
+    obs["cell_type_level"] = obs["cell_type_clean"].map(lambda x: get_field(x, "cell_type_level"))
+
+    return obs
+
+
+def write_cell_type_mapping(adata: ad.AnnData, stem: str) -> None:
+    """Write per-unique-label cell_type_mapping.csv sidecar."""
+    obs = adata.obs.copy()
+    group_cols = [
+        "cell_type_input_raw", "cell_type_gold", "cell_type_clean",
+        "cell_ontology_id", "cell_ontology_label", "cell_ontology_parent_label",
+        "cell_type_status",
+    ]
+    # Only include cols that exist
+    group_cols = [c for c in group_cols if c in obs.columns]
+
+    if "cell_type_clean" not in group_cols:
+        return
+
+    mapping_df = (
+        obs.groupby(group_cols, dropna=False)
+        .size()
+        .reset_index(name="n_cells")
+    )
+    out_path = cfg.CLEAN_H5AD_DIR / f"{stem}.cell_type_mapping.csv"
+    mapping_df.to_csv(out_path, index=False)
+
+
+def write_dataset_profile(adata: ad.AnnData, stem: str, dataset_id: str) -> None:
+    """Write dataset_profile.json sidecar with dataset-level statistics."""
+    obs = adata.obs
+
+    source_meta = adata.uns.get("source_meta", {}) if isinstance(adata.uns, dict) else {}
+    dataset_title = str(source_meta.get("dataset_title", stem))
+    organism = str(source_meta.get("organism", getattr(cfg, "ORGANISM", "unknown")))
+
+    n_mapped = int(obs["cell_ontology_id"].notna().sum()) if "cell_ontology_id" in obs.columns else 0
+    n_unmapped = int(adata.n_obs) - n_mapped
+    n_unique_cl_ids = int(obs["cell_ontology_id"].dropna().nunique()) if "cell_ontology_id" in obs.columns else 0
+    n_unique_ct = int(obs["cell_type_clean"].astype(str).nunique()) if "cell_type_clean" in obs.columns else 0
+    mapped_ratio = round(n_mapped / adata.n_obs, 4) if adata.n_obs > 0 else 0.0
+
+    dominant_tissue_general = "unknown"
+    if "tissue_general" in obs.columns:
+        series = obs["tissue_general"].dropna().astype(str)
+        if len(series) > 0:
+            dominant_tissue_general = series.value_counts().index[0]
+
+    dominant_disease = "unknown"
+    if "disease" in obs.columns:
+        series = obs["disease"].dropna().astype(str)
+        if len(series) > 0:
+            dominant_disease = series.value_counts().index[0]
+
+    profile = {
+        "dataset_id": dataset_id,
+        "dataset_title": dataset_title,
+        "organism": organism,
+        "dominant_tissue_general": dominant_tissue_general,
+        "dominant_disease": dominant_disease,
+        "n_cells": int(adata.n_obs),
+        "n_genes": int(adata.n_vars),
+        "n_unique_cell_types": n_unique_ct,
+        "n_unique_cl_ids": n_unique_cl_ids,
+        "mapped_ratio": mapped_ratio,
+    }
+
+    out_path = cfg.CLEAN_H5AD_DIR / f"{stem}.dataset_profile.json"
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(profile, f, ensure_ascii=False, indent=2)
+
+
 def write_label_count_files_from_clean_adata(adata: ad.AnnData, stem: str) -> None:
     if "cell_type_clean" not in adata.obs.columns:
         raise ValueError(f"{stem}: cleaned h5ad missing obs['cell_type_clean']")
@@ -246,7 +388,28 @@ def repair_outputs_from_clean_h5ad(h5ad_path: Path) -> Dict[str, Any]:
     if isinstance(source_meta, dict):
         record["dataset_id"] = str(source_meta.get("dataset_id", h5ad_path.stem))
 
+    # Phase 1: add ontology columns if missing
+    if "cell_ontology_id" not in adata.obs.columns:
+        adata.obs = apply_ontology_columns(adata.obs)
+        if cfg.CLEAN_WRITE_COMPRESSION:
+            adata.write_h5ad(paths["clean_h5ad"], compression=cfg.CLEAN_WRITE_COMPRESSION)
+        else:
+            adata.write_h5ad(paths["clean_h5ad"])
+
+    # Phase 1: ontology stats for manifest
+    if "cell_ontology_id" in adata.obs.columns:
+        n_mapped = int(adata.obs["cell_ontology_id"].notna().sum())
+        record["n_mapped_ontology_labels"] = n_mapped
+        record["n_unmapped_ontology_labels"] = int(adata.n_obs) - n_mapped
+        record["n_unique_cl_ids"] = int(adata.obs["cell_ontology_id"].dropna().nunique())
+
     write_label_count_files_from_clean_adata(adata, h5ad_path.stem)
+
+    # Phase 1: write sidecar outputs if missing
+    if not paths["cell_type_mapping"].exists():
+        write_cell_type_mapping(adata, h5ad_path.stem)
+    if not paths["dataset_profile"].exists():
+        write_dataset_profile(adata, h5ad_path.stem, record["dataset_id"])
 
     record["status"] = "exists_cleaned_repaired"
     record["elapsed_sec"] = round(time.time() - t0, 2)
@@ -425,6 +588,18 @@ def clean_one_file(h5ad_path: Path) -> Dict[str, Any]:
         gc.collect()
         return record
 
+    # Phase 1: add cell_type_input_raw before compressing categories
+    obs["cell_type_input_raw"] = obs["cell_type"].map(normalize_text_keep_na)
+    adata.obs = obs
+
+    # Phase 1: apply ontology columns
+    adata.obs = apply_ontology_columns(adata.obs)
+
+    # Phase 1: collect ontology stats before compressing to category
+    n_mapped = int(adata.obs["cell_ontology_id"].notna().sum()) if "cell_ontology_id" in adata.obs.columns else 0
+    n_unmapped = int(adata.n_obs) - n_mapped
+    n_unique_cl_ids = int(adata.obs["cell_ontology_id"].dropna().nunique()) if "cell_ontology_id" in adata.obs.columns else 0
+
     # 类别列压缩
     adata.obs["cell_type_clean"] = adata.obs["cell_type_clean"].astype("category")
     adata.obs["cell_type_gold"] = adata.obs["cell_type_gold"].astype("category")
@@ -442,11 +617,19 @@ def clean_one_file(h5ad_path: Path) -> Dict[str, Any]:
     # 再写 side outputs
     write_label_count_files_from_clean_adata(adata, h5ad_path.stem)
 
+    # Phase 1: write sidecar outputs
+    write_cell_type_mapping(adata, h5ad_path.stem)
+    write_dataset_profile(adata, h5ad_path.stem, record["dataset_id"])
+
     record["status"] = "cleaned"
     record["n_obs_after"] = int(adata.n_obs)
     record["n_vars_after"] = int(adata.n_vars)
     record["unique_cell_types_after"] = int(adata.obs["cell_type_clean"].astype(str).nunique())
     record["tissues"] = ";".join(sorted(set(adata.obs["tissue_general"].astype(str))))
+    # Phase 1 ontology stats
+    record["n_mapped_ontology_labels"] = n_mapped
+    record["n_unmapped_ontology_labels"] = n_unmapped
+    record["n_unique_cl_ids"] = n_unique_cl_ids
     record["elapsed_sec"] = round(time.time() - t0, 2)
 
     logging.info(

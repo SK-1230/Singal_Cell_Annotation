@@ -49,6 +49,15 @@ from transformers import AutoTokenizer
 
 import data_prep_config as cfg
 
+from sca.data.split_builder import (
+    build_test_rare_subset,
+    build_test_unmapped_subset,
+    build_benchmark_manifest,
+    write_benchmark_manifest,
+    extract_no_think_messages,
+    build_v2_dataset_profiles,
+)
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -703,7 +712,106 @@ def main(
             validate_token_lengths(test_msg, model_name_or_path=model_name, key="messages")
             validate_token_lengths(test_no, model_name_or_path=model_name, key="messages")
 
-    # 11) 保存 summary
+    # 11) Phase 2 — v2 benchmark splits
+    v2_records_path = Path(cfg.SFT_RECORDS_FULL_V2_JSONL)
+    if not v2_records_path.exists():
+        logging.warning(
+            "v2 records not found at %s; skipping v2 benchmark split.", v2_records_path
+        )
+    else:
+        v2_records = load_full_records(v2_records_path)
+        logging.info("Loaded %d v2 SFT records", len(v2_records))
+
+        # Partition v2 records using the same dataset IDs as v1 split
+        train_v2: List[dict] = []
+        val_v2: List[dict] = []
+        test_v2: List[dict] = []
+        for rec in v2_records:
+            did = rec.get("dataset_id", "")
+            if did in train_ids:
+                train_v2.append(rec)
+            elif did in val_ids:
+                val_v2.append(rec)
+            elif did in test_ids:
+                test_v2.append(rec)
+
+        logging.info(
+            "v2 split: train=%d | val=%d | test=%d",
+            len(train_v2), len(val_v2), len(test_v2),
+        )
+
+        # Write v2 full splits
+        write_jsonl(split_dir / "train_full_v2.jsonl", train_v2)
+        write_jsonl(split_dir / "val_full_v2.jsonl", val_v2)
+        write_jsonl(split_dir / "test_full_v2.jsonl", test_v2)
+
+        # Write v2 message-only splits
+        train_v2_msg, train_v2_no = convert_full_to_msg_and_no(train_v2)
+        val_v2_msg, val_v2_no = convert_full_to_msg_and_no(val_v2)
+        test_v2_msg, test_v2_no = convert_full_to_msg_and_no(test_v2)
+
+        write_jsonl(split_dir / "train_messages_v2.jsonl", train_v2_msg)
+        write_jsonl(split_dir / "val_messages_v2.jsonl", val_v2_msg)
+        write_jsonl(split_dir / "test_messages_v2.jsonl", test_v2_msg)
+
+        write_jsonl(split_dir / "train_messages_no_think_v2.jsonl", train_v2_no)
+        write_jsonl(split_dir / "val_messages_no_think_v2.jsonl", val_v2_no)
+        write_jsonl(split_dir / "test_messages_no_think_v2.jsonl", test_v2_no)
+
+        # Benchmark subsets: globally-rare and ontology-unmapped
+        all_v2_records = train_v2 + val_v2 + test_v2
+        test_rare_v2 = build_test_rare_subset(
+            test_v2,
+            global_records=all_v2_records,
+            rare_max_global_count=cfg.SPLIT_V2_RARE_MAX_GLOBAL_COUNT,
+        )
+        test_unmapped_v2 = build_test_unmapped_subset(test_v2)
+
+        write_jsonl(split_dir / "test_rare_full.jsonl", test_rare_v2)
+        write_jsonl(split_dir / "test_unmapped_full.jsonl", test_unmapped_v2)
+
+        write_jsonl(
+            split_dir / "test_rare_messages_no_think.jsonl",
+            extract_no_think_messages(test_rare_v2),
+        )
+        write_jsonl(
+            split_dir / "test_unmapped_messages_no_think.jsonl",
+            extract_no_think_messages(test_unmapped_v2),
+        )
+
+        logging.info(
+            "Benchmark splits: test_rare=%d | test_unmapped=%d",
+            len(test_rare_v2), len(test_unmapped_v2),
+        )
+
+        # Benchmark manifest CSV
+        def _n_datasets(recs: List[dict]) -> int:
+            return len({r.get("dataset_id", "") for r in recs})
+
+        split_sizes_v2 = {
+            "train_v2": len(train_v2),
+            "val_v2": len(val_v2),
+            "test_v2": len(test_v2),
+            "test_rare": len(test_rare_v2),
+            "test_unmapped": len(test_unmapped_v2),
+        }
+        split_dataset_counts_v2 = {
+            "train_v2": _n_datasets(train_v2),
+            "val_v2": _n_datasets(val_v2),
+            "test_v2": _n_datasets(test_v2),
+            "test_rare": _n_datasets(test_rare_v2),
+            "test_unmapped": _n_datasets(test_unmapped_v2),
+        }
+
+        manifest_rows = build_benchmark_manifest(split_sizes_v2, split_dataset_counts_v2)
+        write_benchmark_manifest(manifest_rows, split_dir / "benchmark_manifest.csv")
+
+        # v2 dataset profiles (extended with ontology stats)
+        v2_profiles = build_v2_dataset_profiles(all_v2_records)
+        write_csv(split_dir / "dataset_profiles_v2.csv", v2_profiles)
+        logging.info("Saved v2 dataset profiles: %d datasets", len(v2_profiles))
+
+    # 12) 保存 summary
     save_summary(
         split_dir=split_dir,
         train_ids=train_ids,

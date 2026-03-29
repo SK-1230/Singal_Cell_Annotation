@@ -1,0 +1,29 @@
+organ_general	organ_specific	tissue_ontology_id	notes
+blood	blood	UBERON:0000178	canonical
+blood	peripheral blood	UBERON:0000178	alias
+lung	lung	UBERON:0002048	canonical
+lung	alveolus	UBERON:0002299	substructure
+lung	bronchus	UBERON:0002185	substructure
+lung	trachea	UBERON:0003126	substructure
+liver	liver	UBERON:0002107	canonical
+liver	hepatic lobule	UBERON:0004530	substructure
+liver	bile duct	UBERON:0000403	substructure
+intestine	intestine	UBERON:0000160	canonical
+intestine	small intestine	UBERON:0002108	substructure
+intestine	large intestine	UBERON:0000059	substructure
+intestine	colon	UBERON:0001155	substructure
+intestine	ileum	UBERON:0002116	substructure
+intestine	jejunum	UBERON:0002115	substructure
+intestine	duodenum	UBERON:0002114	substructure
+intestine	cecum	UBERON:0001153	substructure
+kidney	kidney	UBERON:0002113	canonical
+heart	heart	UBERON:0000948	canonical
+brain	brain	UBERON:0000955	canonical
+skin	skin	UBERON:0002097	canonical
+bone marrow	bone marrow	UBERON:0002371	canonical
+lymph node	lymph node	UBERON:0000029	canonical
+spleen	spleen	UBERON:0002106	canonical
+thymus	thymus	UBERON:0002370	canonical
+pancreas	pancreas	UBERON:0001264	canonical
+adipose tissue	adipose tissue	UBERON:0001013	canonical
+muscle	muscle tissue	UBERON:0002385	canonical

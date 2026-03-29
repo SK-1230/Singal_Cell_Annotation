@@ -10,6 +10,13 @@ import pandas as pd
 
 import data_prep_config as cfg
 
+# Phase 2: v2 SFT builder
+try:
+    from sca.data.sft_builder import build_sft_record_v2, build_distill_record
+    from sca.data.marker_features import summarize_positive_markers
+    _V2_AVAILABLE = True
+except ImportError:
+    _V2_AVAILABLE = False
 
 logging.basicConfig(
     level=logging.INFO,
@@ -172,6 +179,39 @@ def load_marker_records() -> List[Dict[str, Any]]:
     return records
 
 
+def load_marker_records_v2() -> List[Dict[str, Any]]:
+    """Load v2 marker records from marker_examples_v2.jsonl."""
+    path = Path(cfg.MARKER_EXAMPLES_V2_JSONL)
+    if not path.exists():
+        logging.warning("marker_examples_v2.jsonl not found: %s — v2 SFT will be skipped", path)
+        return []
+
+    records: List[Dict[str, Any]] = []
+    with open(path, "r", encoding="utf-8") as f:
+        for line_no, line in enumerate(f, start=1):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except Exception as e:
+                logging.warning("Skip invalid JSON line %d: %s", line_no, e)
+                continue
+
+            if not rec.get("positive_markers"):
+                logging.debug("Skip line %d: missing positive_markers", line_no)
+                continue
+
+            if "cell_type_clean" not in rec:
+                logging.warning("Skip line %d: missing cell_type_clean", line_no)
+                continue
+
+            records.append(rec)
+
+    logging.info("Loaded %d v2 marker records from %s", len(records), path.name)
+    return records
+
+
 def write_jsonl(path: str | Path, rows: List[Dict[str, Any]]) -> None:
     with open(path, "w", encoding="utf-8") as f:
         for row in rows:
@@ -219,6 +259,64 @@ def save_summary(
 
     summary_path.write_text("\n".join(lines), encoding="utf-8")
     logging.info("Saved run summary to %s", summary_path)
+
+
+def save_summary_v2(
+    full_records: List[Dict[str, Any]],
+    distill_records: List[Dict[str, Any]],
+) -> None:
+    summary_path = Path(cfg.SFT_MESSAGES_V2_JSONL).with_name("05_make_sft_jsonl_v2_run_summary.txt")
+
+    conf_counter: Counter = Counter()
+    label_counter: Counter = Counter()
+    decision_counter: Counter = Counter()
+    dataset_counter: Counter = Counter()
+    evidence_counter: Counter = Counter()
+
+    for rec in full_records:
+        conf_counter[rec.get("confidence_label", "unknown")] += 1
+        label_counter[rec.get("cell_type_clean", "unknown")] += 1
+        decision_counter[rec.get("decision", "unknown")] += 1
+        dataset_counter[rec.get("dataset_id", "unknown")] += 1
+        evidence_counter[rec.get("evidence_support_level", "unknown")] += 1
+
+    n_ontology_mapped = sum(1 for r in full_records if r.get("cell_ontology_id"))
+    n_novelty = sum(1 for r in full_records if r.get("novelty_flag"))
+
+    lines = [
+        "=== 05_make_sft_jsonl v2 run summary ===",
+        "",
+        f"Full records (v2): {len(full_records)}",
+        f"Distill records: {len(distill_records)}",
+        f"Ontology-mapped: {n_ontology_mapped}",
+        f"Novelty-flagged: {n_novelty}",
+        "",
+        "Confidence distribution:",
+    ]
+    for k in ["high", "medium", "low"]:
+        lines.append(f"  {k}: {conf_counter.get(k, 0)}")
+
+    lines += ["", "Decision distribution:"]
+    for k in ["accept", "review", "unresolved", "novel_candidate"]:
+        lines.append(f"  {k}: {decision_counter.get(k, 0)}")
+
+    lines += ["", "Evidence support distribution:"]
+    for k in ["strong", "moderate", "weak", "conflicting"]:
+        lines.append(f"  {k}: {evidence_counter.get(k, 0)}")
+
+    lines += ["", "Examples per dataset:"]
+    for ds, cnt in sorted(dataset_counter.items()):
+        lines.append(f"  {ds}: {cnt}")
+
+    lines += [
+        "",
+        f"SFT_RECORDS_FULL_V2: {cfg.SFT_RECORDS_FULL_V2_JSONL}",
+        f"SFT_MESSAGES_V2: {cfg.SFT_MESSAGES_V2_JSONL}",
+        f"SFT_MESSAGES_NO_THINK_V2: {cfg.SFT_MESSAGES_NO_THINK_V2_JSONL}",
+    ]
+
+    summary_path.write_text("\n".join(lines), encoding="utf-8")
+    logging.info("Saved v2 run summary to %s", summary_path)
 
 
 def main() -> None:
@@ -297,6 +395,85 @@ def main() -> None:
     logging.info("Saved manifest to %s", manifest_path)
 
     save_summary(full_records, pure_messages, pure_messages_no_think)
+
+    # =====================================================================
+    # Phase 2: v2 SFT generation from marker_examples_v2.jsonl
+    # =====================================================================
+    if not _V2_AVAILABLE:
+        logging.warning("sca.data.sft_builder not available — skipping v2 SFT generation")
+        return
+
+    v2_marker_records = load_marker_records_v2()
+    if not v2_marker_records:
+        logging.warning("No v2 marker records found — skipping v2 SFT generation")
+        return
+
+    logging.info("Building v2 SFT from %d v2 marker records", len(v2_marker_records))
+
+    v2_full_records: List[Dict[str, Any]] = []
+    v2_pure_messages: List[Dict[str, Any]] = []
+    v2_pure_messages_no_think: List[Dict[str, Any]] = []
+    v2_distill_records: List[Dict[str, Any]] = []
+
+    for rec in v2_marker_records:
+        try:
+            sft_rec = build_sft_record_v2(rec, system_prompt=cfg.SYSTEM_PROMPT)
+        except Exception as e:
+            logging.warning("Failed building v2 SFT for %s/%s: %r",
+                            rec.get("dataset_id"), rec.get("cell_type_clean"), e)
+            continue
+
+        v2_full_records.append(sft_rec)
+        v2_pure_messages.append({"messages": sft_rec["messages"]})
+        v2_pure_messages_no_think.append({"messages": sft_rec["messages_no_think"]})
+
+        try:
+            distill = build_distill_record(rec, system_prompt=cfg.SYSTEM_PROMPT)
+            v2_distill_records.append(distill)
+        except Exception as e:
+            logging.debug("Failed building distill record: %r", e)
+
+    write_jsonl(cfg.SFT_RECORDS_FULL_V2_JSONL, v2_full_records)
+    write_jsonl(cfg.SFT_MESSAGES_V2_JSONL, v2_pure_messages)
+    write_jsonl(cfg.SFT_MESSAGES_NO_THINK_V2_JSONL, v2_pure_messages_no_think)
+
+    # distillation records
+    distill_path = Path(cfg.SFT_DIR) / "distill_records_v1.jsonl"
+    write_jsonl(distill_path, v2_distill_records)
+
+    # manifest v2
+    manifest_v2_path = Path(cfg.SFT_DIR) / "sft_records_manifest_v2.csv"
+    pd.DataFrame([
+        {
+            "dataset_id": x["dataset_id"],
+            "dataset_title": x["dataset_title"],
+            "cell_type_clean": x["cell_type_clean"],
+            "cell_ontology_id": x.get("cell_ontology_id"),
+            "n_cells": x["n_cells"],
+            "confidence_label": x.get("confidence_label"),
+            "confidence_score": x.get("confidence_score"),
+            "evidence_support_level": x.get("evidence_support_level"),
+            "decision": x.get("decision"),
+            "novelty_flag": x.get("novelty_flag"),
+            "marker_quality_score": x.get("marker_quality_score"),
+            "tissue_general": x["tissue_general"],
+            "disease": x["disease"],
+        }
+        for x in v2_full_records
+    ]).to_csv(manifest_v2_path, index=False)
+
+    logging.info("Saved v2 full records: %s (%d rows)", cfg.SFT_RECORDS_FULL_V2_JSONL, len(v2_full_records))
+    logging.info("Saved v2 messages: %s", cfg.SFT_MESSAGES_V2_JSONL)
+    logging.info("Saved v2 no-think: %s", cfg.SFT_MESSAGES_NO_THINK_V2_JSONL)
+    logging.info("Saved distill records: %s (%d rows)", distill_path, len(v2_distill_records))
+    logging.info("Saved v2 manifest: %s", manifest_v2_path)
+
+    save_summary_v2(v2_full_records, v2_distill_records)
+
+    print(f"\nv2 SFT generation complete:")
+    print(f"  full_records_v2   : {len(v2_full_records)}")
+    print(f"  distill_records   : {len(v2_distill_records)}")
+    print(f"  manifest_v2       : {manifest_v2_path}")
 
 
 if __name__ == "__main__":

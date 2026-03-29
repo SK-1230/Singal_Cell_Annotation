@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import gc
+import hashlib
 import json
 import logging
 import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import anndata as ad
 import numpy as np
@@ -15,6 +16,18 @@ from tqdm import tqdm
 
 import data_prep_config as cfg
 
+# Phase 1 v2: evidence-aware marker extraction
+try:
+    from sca.data.marker_extraction import (
+        extract_positive_markers,
+        extract_negative_markers,
+        compute_marker_quality_score,
+        safe_mean_topk,
+    )
+    from sca.data.label_normalization import normalize_and_map, init_alias_table
+    _V2_AVAILABLE = True
+except ImportError:
+    _V2_AVAILABLE = False
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,6 +40,13 @@ logging.basicConfig(
 MARKER_RERUN_ZERO_EXAMPLE_SUCCESS = getattr(cfg, "MARKER_RERUN_ZERO_EXAMPLE_SUCCESS", False)
 MARKER_RECOVER_FROM_JSONL_IF_MANIFEST_MISSING = getattr(cfg, "MARKER_RECOVER_FROM_JSONL_IF_MANIFEST_MISSING", True)
 MARKER_REMOVE_ORPHAN_JSONL_RECORDS = getattr(cfg, "MARKER_REMOVE_ORPHAN_JSONL_RECORDS", False)
+
+# Phase 1 v2 配置
+MARKER_DE_METHOD = getattr(cfg, "MARKER_DE_METHOD", "wilcoxon")
+TOP_K_NEGATIVE_MARKERS = getattr(cfg, "TOP_K_NEGATIVE_MARKERS", 5)
+MARKER_LOW_CELLS_THRESHOLD = getattr(cfg, "MARKER_LOW_CELLS_THRESHOLD", 100)
+MARKER_LOW_QUALITY_SCORE_THRESHOLD = getattr(cfg, "MARKER_LOW_QUALITY_SCORE_THRESHOLD", 0.3)
+MARKER_RARE_LABEL_FRACTION_THRESHOLD = getattr(cfg, "MARKER_RARE_LABEL_FRACTION_THRESHOLD", 0.02)
 
 
 def is_bad_marker_gene(gene: str) -> bool:
@@ -109,7 +129,7 @@ def extract_markers_for_dataset(adata: ad.AnnData) -> List[dict]:
     # 显式设 category，groupby 更稳
     adata_work.obs[cfg.MARKER_GROUP_COL] = adata_work.obs[cfg.MARKER_GROUP_COL].astype("category")
 
-    # 差异分析：每个标签 vs 其余
+    # 差异分析：每个标签 vs 其余 (v1 默认 t-test 保持不变)
     sc.tl.rank_genes_groups(
         adata_work,
         groupby=cfg.MARKER_GROUP_COL,
@@ -169,6 +189,198 @@ def extract_markers_for_dataset(adata: ad.AnnData) -> List[dict]:
             "avg_logfc_top5": safe_mean_topk(top_df["logfoldchanges"], 5) if "logfoldchanges" in top_df.columns else None,
             "avg_padj_top5": safe_mean_topk(top_df["pvals_adj"], 5) if "pvals_adj" in top_df.columns else None,
         }
+        records.append(record)
+
+    return records
+
+
+def _make_record_id(dataset_id: str, label: str) -> str:
+    raw = f"{dataset_id}|{label}"
+    return hashlib.md5(raw.encode()).hexdigest()[:16]
+
+
+def extract_markers_v2_for_dataset(adata: ad.AnnData) -> List[dict]:
+    """
+    Phase 1 v2 marker extraction:
+    - Uses wilcoxon DE method
+    - Extracts positive + negative markers with full stats
+    - Adds ontology mapping (if available)
+    - Computes marker_quality_score and hardness_flags
+    """
+    if not _V2_AVAILABLE:
+        logging.warning("sca.data.marker_extraction not available — falling back to v1")
+        return []
+
+    records: List[dict] = []
+
+    if cfg.MARKER_GROUP_COL not in adata.obs.columns:
+        return records
+
+    if adata.obs[cfg.MARKER_GROUP_COL].nunique() < 2:
+        return records
+
+    adata_work = adata.copy()
+    adata_work = adata_work[adata_work.obs[cfg.MARKER_GROUP_COL].notna()].copy()
+    if adata_work.n_obs == 0:
+        return records
+
+    adata_work = downsample_per_label(adata_work, cfg.MARKER_GROUP_COL)
+    if adata_work.n_obs == 0:
+        return records
+
+    if "counts" in adata_work.layers:
+        adata_work.X = adata_work.layers["counts"].copy()
+
+    sc.pp.filter_genes(adata_work, min_cells=cfg.MARKER_MIN_GENE_CELLS)
+    if adata_work.n_vars == 0:
+        return records
+
+    sc.pp.normalize_total(adata_work, target_sum=1e4)
+    sc.pp.log1p(adata_work)
+
+    adata_work.obs[cfg.MARKER_GROUP_COL] = adata_work.obs[cfg.MARKER_GROUP_COL].astype("category")
+
+    # Phase 1 v2: use wilcoxon
+    try:
+        sc.tl.rank_genes_groups(
+            adata_work,
+            groupby=cfg.MARKER_GROUP_COL,
+            method=MARKER_DE_METHOD,
+            corr_method="benjamini-hochberg",
+            n_genes=cfg.MAX_CANDIDATE_MARKERS,
+            use_raw=False,
+        )
+    except Exception as e:
+        logging.warning("wilcoxon DE failed (%r), trying t-test fallback", e)
+        sc.tl.rank_genes_groups(
+            adata_work,
+            groupby=cfg.MARKER_GROUP_COL,
+            method="t-test",
+            corr_method="benjamini-hochberg",
+            n_genes=cfg.MAX_CANDIDATE_MARKERS,
+            use_raw=False,
+        )
+
+    dataset_meta = adata.uns.get("source_meta", {})
+    dataset_id = dataset_meta.get("dataset_id", "unknown_dataset")
+    dataset_title = dataset_meta.get("dataset_title", "unknown_title")
+
+    # Initialize ontology if available
+    if _V2_AVAILABLE and hasattr(cfg, "LABEL_ALIASES_TSV"):
+        try:
+            init_alias_table(cfg.LABEL_ALIASES_TSV)
+        except Exception:
+            pass
+
+    total_cells = adata_work.n_obs
+    categories = list(adata_work.obs[cfg.MARKER_GROUP_COL].cat.categories)
+    label_counts_in_ds = adata_work.obs[cfg.MARKER_GROUP_COL].value_counts()
+
+    for label in categories:
+        try:
+            de_df = sc.get.rank_genes_groups_df(adata_work, group=label)
+        except Exception:
+            continue
+
+        de_df = de_df[de_df["names"].notna()].copy()
+        if de_df.empty:
+            continue
+
+        # Build label mask in the working adata
+        label_mask = (adata_work.obs[cfg.MARKER_GROUP_COL].astype(str) == str(label)).values
+
+        # Extract positive and negative markers
+        positive_markers = extract_positive_markers(
+            de_df=de_df,
+            adata=adata_work,
+            label_mask=label_mask,
+            top_k=cfg.TOP_K_MARKERS,
+            uninformative_genes=cfg.UNINFORMATIVE_GENES,
+            bad_prefixes=cfg.BAD_GENE_PREFIXES,
+        )
+
+        if len(positive_markers) < cfg.MARKER_MIN_TOP_GENES:
+            continue
+
+        negative_markers = extract_negative_markers(
+            de_df=de_df,
+            adata=adata_work,
+            label_mask=label_mask,
+            top_k=TOP_K_NEGATIVE_MARKERS,
+            uninformative_genes=cfg.UNINFORMATIVE_GENES,
+            bad_prefixes=cfg.BAD_GENE_PREFIXES,
+        )
+
+        # Get cell-level info from original adata
+        label_cells = adata.obs[adata.obs[cfg.MARKER_GROUP_COL].astype(str) == str(label)]
+        n_cells = int(label_cells.shape[0])
+
+        # Ontology mapping
+        ontology_info: Dict[str, Any] = {}
+        if _V2_AVAILABLE:
+            # Check if obs already has ontology cols from 03
+            if "cell_ontology_id" in label_cells.columns:
+                ont_id = label_cells["cell_ontology_id"].dropna()
+                ontology_info["cell_ontology_id"] = str(ont_id.iloc[0]) if len(ont_id) > 0 else None
+            if "cell_ontology_label" in label_cells.columns:
+                ont_lbl = label_cells["cell_ontology_label"].dropna()
+                ontology_info["cell_ontology_label"] = str(ont_lbl.iloc[0]) if len(ont_lbl) > 0 else None
+            if "cell_ontology_parent_label" in label_cells.columns:
+                parent = label_cells["cell_ontology_parent_label"].dropna()
+                ontology_info["cell_ontology_parent_label"] = str(parent.iloc[0]) if len(parent) > 0 else None
+
+            if not ontology_info:
+                mapped = normalize_and_map(str(label))
+                ontology_info = {
+                    "cell_ontology_id": mapped.get("cell_ontology_id"),
+                    "cell_ontology_label": mapped.get("cell_ontology_label"),
+                    "cell_ontology_parent_label": mapped.get("cell_ontology_parent_label"),
+                }
+
+        # Marker quality score
+        quality_score = compute_marker_quality_score(
+            positive_markers, n_cells, MARKER_LOW_CELLS_THRESHOLD
+        )
+
+        # avg stats
+        lfc_series = pd.Series([m.get("logfoldchange") for m in positive_markers]).dropna()
+        padj_series = pd.Series([m.get("pvals_adj") for m in positive_markers]).dropna()
+        avg_logfc_top5 = safe_mean_topk(lfc_series, 5)
+        avg_padj_top5 = safe_mean_topk(padj_series, 5)
+
+        # Hardness flags
+        label_count_in_ds = int(label_counts_in_ds.get(label, 0))
+        label_fraction = label_count_in_ds / total_cells if total_cells > 0 else 0.0
+
+        hardness_flags = {
+            "low_cells": n_cells < MARKER_LOW_CELLS_THRESHOLD,
+            "low_marker_quality": quality_score < MARKER_LOW_QUALITY_SCORE_THRESHOLD,
+            "ontology_unmapped": not bool(ontology_info.get("cell_ontology_id")),
+            "rare_label_in_dataset": label_fraction < MARKER_RARE_LABEL_FRACTION_THRESHOLD,
+        }
+
+        record: Dict[str, Any] = {
+            "record_id": _make_record_id(dataset_id, str(label)),
+            "dataset_id": dataset_id,
+            "dataset_title": dataset_title,
+            "organism": cfg.ORGANISM,
+            "tissue_general": dominant_value(label_cells["tissue_general"]) if "tissue_general" in label_cells.columns else "unknown",
+            "tissue": dominant_value(label_cells["tissue"]) if "tissue" in label_cells.columns else "unknown",
+            "disease": dominant_value(label_cells["disease"]) if "disease" in label_cells.columns else "unknown",
+            "cell_type_clean": str(label),
+            "cell_ontology_id": ontology_info.get("cell_ontology_id"),
+            "cell_ontology_label": ontology_info.get("cell_ontology_label"),
+            "cell_ontology_parent_label": ontology_info.get("cell_ontology_parent_label"),
+            "n_cells": n_cells,
+            "de_method": MARKER_DE_METHOD,
+            "positive_markers": positive_markers,
+            "negative_markers": negative_markers,
+            "avg_logfc_top5": avg_logfc_top5,
+            "avg_padj_top5": avg_padj_top5,
+            "marker_quality_score": quality_score,
+            "hardness_flags": hardness_flags,
+        }
+
         records.append(record)
 
     return records
@@ -389,6 +601,45 @@ def remove_orphan_jsonl_records(
     return new_records
 
 
+def save_v2_manifest_summary(
+    manifest_rows: List[Dict[str, Any]],
+    all_v2_records: List[dict],
+    manifest_path: Path,
+    summary_path: Path,
+    out_jsonl: Path,
+) -> None:
+    """Save manifest and run summary for v2 output."""
+    save_manifest(manifest_rows, manifest_path)
+    df = pd.DataFrame(manifest_rows)
+    total_files = len(df)
+    success = int(df["status"].isin(["success", "success_zero_examples", "exists_jsonl_recovered"]).sum()) if total_files else 0
+    failed = int((df["status"] == "failed").sum()) if total_files else 0
+    total_examples = len(all_v2_records)
+
+    # Compute manifest-level summary stats
+    n_zero_example_labels = sum(1 for r in manifest_rows if int(r.get("n_examples", 0) or 0) == 0)
+    quality_scores = [r.get("marker_quality_score") for r in all_v2_records if r.get("marker_quality_score") is not None]
+    mean_quality = round(float(np.mean(quality_scores)), 4) if quality_scores else None
+    n_ontology_mapped = sum(1 for r in all_v2_records if r.get("cell_ontology_id"))
+
+    lines = [
+        "=== 04_make_marker_examples v2 run summary ===",
+        "",
+        f"Total files: {total_files}",
+        f"Success-like: {success}",
+        f"Failed: {failed}",
+        f"Total marker examples (v2): {total_examples}",
+        "",
+        f"n_zero_example_labels: {n_zero_example_labels}",
+        f"mean_marker_quality_score: {mean_quality}",
+        f"n_ontology_mapped_examples: {n_ontology_mapped}",
+        f"DE method: {MARKER_DE_METHOD}",
+        "",
+        f"V2 JSONL: {out_jsonl}",
+    ]
+    summary_path.write_text("\n".join(lines), encoding="utf-8")
+
+
 def main() -> None:
     input_files = sorted(cfg.CLEAN_H5AD_DIR.glob("*.h5ad"))
     if not input_files:
@@ -396,6 +647,11 @@ def main() -> None:
 
     out_jsonl = Path(cfg.MARKER_EXAMPLES_JSONL)
     out_jsonl.parent.mkdir(parents=True, exist_ok=True)
+
+    # Phase 1 v2 output paths
+    out_v2_jsonl = Path(cfg.MARKER_EXAMPLES_V2_JSONL)
+    out_v2_manifest = out_v2_jsonl.with_name("marker_examples_v2_manifest.csv")
+    out_v2_summary = out_v2_jsonl.with_name("04_make_marker_examples_v2_run_summary.txt")
 
     manifest_path = out_jsonl.with_name("marker_examples_manifest.csv")
     summary_path = out_jsonl.with_name("04_make_marker_examples_run_summary.txt")
@@ -408,6 +664,7 @@ def main() -> None:
     logging.info("MARKER_RERUN_ZERO_EXAMPLE_SUCCESS=%s", MARKER_RERUN_ZERO_EXAMPLE_SUCCESS)
     logging.info("MARKER_RECOVER_FROM_JSONL_IF_MANIFEST_MISSING=%s", MARKER_RECOVER_FROM_JSONL_IF_MANIFEST_MISSING)
     logging.info("MARKER_REMOVE_ORPHAN_JSONL_RECORDS=%s", MARKER_REMOVE_ORPHAN_JSONL_RECORDS)
+    logging.info("Phase 1 v2: DE method=%s | v2_available=%s", MARKER_DE_METHOD, _V2_AVAILABLE)
 
     # ========= 读取旧进度 =========
     existing_manifest_df = load_existing_manifest(manifest_path)
@@ -417,6 +674,14 @@ def main() -> None:
     valid_dataset_ids = {p.stem for p in input_files}
     all_records = remove_orphan_jsonl_records(all_records, valid_dataset_ids)
     dataset_records_map = build_dataset_id_to_records(all_records)
+
+    # ========= Phase 1 v2: 读取旧 v2 进度 =========
+    all_v2_records: List[dict] = load_existing_jsonl(out_v2_jsonl)
+    all_v2_records = remove_orphan_jsonl_records(all_v2_records, valid_dataset_ids)
+
+    existing_v2_manifest_df = load_existing_manifest(out_v2_manifest)
+    existing_v2_manifest_map = build_file_name_to_manifest_row(existing_v2_manifest_df)
+    v2_manifest_rows_map: Dict[str, Dict[str, Any]] = dict(existing_v2_manifest_map)
 
     # ========= 若 manifest 缺失但 jsonl 里有数据，则自动恢复 =========
     recovered_rows = recover_rows_from_jsonl_only(input_files, existing_manifest_map, dataset_records_map)
@@ -449,10 +714,47 @@ def main() -> None:
 
             # 若本次准备重跑，先删掉该 dataset 的旧 marker 记录，避免重复
             all_records = remove_dataset_records(all_records, source_dataset_id)
+            all_v2_records = remove_dataset_records(all_v2_records, source_dataset_id)
 
+            # v1: original extraction (t-test)
             records = extract_markers_for_dataset(adata)
             all_records.extend(records)
             dataset_records_map = build_dataset_id_to_records(all_records)
+
+            # v2: evidence-aware extraction (wilcoxon + full stats)
+            if _V2_AVAILABLE:
+                try:
+                    records_v2 = extract_markers_v2_for_dataset(adata)
+                    all_v2_records.extend(records_v2)
+                    logging.info(
+                        "Generated %d v2 marker examples for %s",
+                        len(records_v2), h5ad_path.name
+                    )
+                    v2_manifest_rows_map[h5ad_path.name] = make_manifest_row(
+                        file_name=h5ad_path.name,
+                        dataset_id=source_dataset_id,
+                        dataset_title=source_dataset_title,
+                        status="success" if records_v2 else "success_zero_examples",
+                        n_examples=len(records_v2),
+                        elapsed_sec=time.time() - t0,
+                        error="",
+                    )
+                    # Add quality stats to v2 manifest row
+                    if records_v2:
+                        qs = [r.get("marker_quality_score") for r in records_v2 if r.get("marker_quality_score") is not None]
+                        v2_manifest_rows_map[h5ad_path.name]["marker_quality_score"] = round(float(np.mean(qs)), 4) if qs else None
+                except Exception as ev2:
+                    logging.warning("v2 extraction failed for %s: %r", h5ad_path.name, ev2)
+                    if h5ad_path.name not in v2_manifest_rows_map:
+                        v2_manifest_rows_map[h5ad_path.name] = make_manifest_row(
+                            file_name=h5ad_path.name,
+                            dataset_id=source_dataset_id,
+                            dataset_title=source_dataset_title,
+                            status="failed",
+                            n_examples=0,
+                            elapsed_sec=time.time() - t0,
+                            error=repr(ev2),
+                        )
 
             status = "success" if len(records) > 0 else "success_zero_examples"
 
@@ -490,14 +792,30 @@ def main() -> None:
         if cfg.MARKER_WRITE_JSONL_EVERY_FILE:
             save_jsonl(all_records, out_jsonl)
             save_manifest(list(manifest_rows_map.values()), manifest_path)
+            if _V2_AVAILABLE:
+                save_jsonl(all_v2_records, out_v2_jsonl)
+                save_manifest(list(v2_manifest_rows_map.values()), out_v2_manifest)
 
     if not cfg.MARKER_WRITE_JSONL_EVERY_FILE:
         save_jsonl(all_records, out_jsonl)
         save_manifest(list(manifest_rows_map.values()), manifest_path)
+        if _V2_AVAILABLE:
+            save_jsonl(all_v2_records, out_v2_jsonl)
+            save_manifest(list(v2_manifest_rows_map.values()), out_v2_manifest)
 
     final_manifest_rows = list(manifest_rows_map.values())
     save_run_summary(final_manifest_rows, summary_path, out_jsonl)
     logging.info("Saved %d marker examples to %s", len(all_records), out_jsonl)
+
+    if _V2_AVAILABLE:
+        save_v2_manifest_summary(
+            list(v2_manifest_rows_map.values()),
+            all_v2_records,
+            out_v2_manifest,
+            out_v2_summary,
+            out_v2_jsonl,
+        )
+        logging.info("Saved %d v2 marker examples to %s", len(all_v2_records), out_v2_jsonl)
 
 
 if __name__ == "__main__":

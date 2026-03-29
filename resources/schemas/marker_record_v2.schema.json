@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MarkerRecordV2",
+  "description": "Schema for marker evidence records v2 — used for evidence-grounded SFT and retrieval.",
+  "type": "object",
+  "required": [
+    "record_id",
+    "dataset_id",
+    "dataset_title",
+    "organism",
+    "tissue_general",
+    "tissue",
+    "disease",
+    "cell_type_clean",
+    "cell_ontology_id",
+    "cell_ontology_label",
+    "cell_ontology_parent_label",
+    "n_cells",
+    "de_method",
+    "positive_markers",
+    "negative_markers",
+    "avg_logfc_top5",
+    "avg_padj_top5",
+    "marker_quality_score",
+    "hardness_flags"
+  ],
+  "properties": {
+    "record_id": {"type": "string"},
+    "dataset_id": {"type": "string"},
+    "dataset_title": {"type": "string"},
+    "organism": {"type": "string"},
+    "tissue_general": {"type": "string"},
+    "tissue": {"type": "string"},
+    "disease": {"type": "string"},
+    "cell_type_clean": {"type": "string"},
+    "cell_ontology_id": {"type": ["string", "null"]},
+    "cell_ontology_label": {"type": ["string", "null"]},
+    "cell_ontology_parent_label": {"type": ["string", "null"]},
+    "n_cells": {"type": "integer", "minimum": 0},
+    "de_method": {"type": "string"},
+    "positive_markers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["gene", "rank", "logfoldchange", "pvals_adj", "pct_in", "pct_out", "score"],
+        "properties": {
+          "gene": {"type": "string"},
+          "rank": {"type": "integer"},
+          "logfoldchange": {"type": ["number", "null"]},
+          "pvals_adj": {"type": ["number", "null"]},
+          "pct_in": {"type": ["number", "null"]},
+          "pct_out": {"type": ["number", "null"]},
+          "score": {"type": ["number", "null"]}
+        }
+      }
+    },
+    "negative_markers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["gene", "rank", "pct_in", "pct_out", "reason"],
+        "properties": {
+          "gene": {"type": "string"},
+          "rank": {"type": "integer"},
+          "pct_in": {"type": ["number", "null"]},
+          "pct_out": {"type": ["number", "null"]},
+          "reason": {"type": "string"}
+        }
+      }
+    },
+    "avg_logfc_top5": {"type": ["number", "null"]},
+    "avg_padj_top5": {"type": ["number", "null"]},
+    "marker_quality_score": {"type": ["number", "null"], "minimum": 0.0, "maximum": 1.0},
+    "hardness_flags": {
+      "type": "object",
+      "properties": {
+        "low_cells": {"type": "boolean"},
+        "low_marker_quality": {"type": "boolean"},
+        "ontology_unmapped": {"type": "boolean"},
+        "rare_label_in_dataset": {"type": "boolean"}
+      }
+    }
+  }
+}
