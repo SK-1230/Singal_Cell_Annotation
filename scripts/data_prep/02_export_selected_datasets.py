@@ -12,22 +12,13 @@ import cellxgene_census
 import pandas as pd
 from tqdm import tqdm
 
-import config as cfg
+import data_prep_config as cfg
 
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s"
 )
-
-
-# =========================
-# 可调参数
-# =========================
-MAX_RETRIES = 3           # 单个数据集最多尝试次数
-RETRY_SLEEP_SECONDS = 8   # 失败后重试前等待时间
-WRITE_COMPRESSION = None  # 可选: "gzip"；若磁盘紧张可考虑开启，但写入会更慢
-SAVE_SOURCE_META_JSON = True  # 是否额外保存一份 json 方便查看
 
 
 OBS_COLUMNS = [
@@ -124,12 +115,12 @@ def export_one_dataset(
     last_error = None
     t0 = time.time()
 
-    for attempt in range(1, MAX_RETRIES + 1):
+    for attempt in range(1, cfg.EXPORT_MAX_RETRIES + 1):
         record["attempts"] = attempt
         try:
             logging.info(
                 "[%s] attempt %d/%d | start export | title=%s",
-                dataset_id, attempt, MAX_RETRIES, dataset_title
+                dataset_id, attempt, cfg.EXPORT_MAX_RETRIES, dataset_title
             )
 
             read_t0 = time.time()
@@ -149,15 +140,15 @@ def export_one_dataset(
 
             adata.uns["source_meta"] = source_meta
 
-            if SAVE_SOURCE_META_JSON:
+            if cfg.EXPORT_SAVE_SOURCE_META_JSON:
                 meta_json_path.write_text(
                     json.dumps(source_meta, ensure_ascii=False, indent=2),
                     encoding="utf-8",
                 )
 
             write_t0 = time.time()
-            if WRITE_COMPRESSION:
-                adata.write_h5ad(out_path, compression=WRITE_COMPRESSION)
+            if cfg.EXPORT_WRITE_COMPRESSION:
+                adata.write_h5ad(out_path, compression=cfg.EXPORT_WRITE_COMPRESSION)
             else:
                 adata.write_h5ad(out_path)
             logging.info(
@@ -198,13 +189,13 @@ def export_one_dataset(
 
             gc.collect()
 
-            if attempt < MAX_RETRIES:
+            if attempt < cfg.EXPORT_MAX_RETRIES:
                 logging.info(
                     "[%s] will retry after %ds...",
                     dataset_id,
-                    RETRY_SLEEP_SECONDS,
+                    cfg.EXPORT_RETRY_SLEEP_SECONDS,
                 )
-                time.sleep(RETRY_SLEEP_SECONDS)
+                time.sleep(cfg.EXPORT_RETRY_SLEEP_SECONDS)
 
     record["status"] = "failed"
     record["elapsed_sec"] = round(time.time() - t0, 2)
@@ -325,4 +316,4 @@ if __name__ == "__main__":
     main()
 
 
-# python -u 02_export_selected_datasets.py 2>&1 | tee data/meta/02_export_selected_datasets.log
+# python -u scripts/data_prep/02_export_selected_datasets.py 2>&1 | tee data/meta/02_export_selected_datasets.log

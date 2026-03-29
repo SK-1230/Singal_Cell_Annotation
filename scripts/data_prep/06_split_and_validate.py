@@ -10,7 +10,7 @@ from typing import Dict, List, Tuple
 
 from transformers import AutoTokenizer
 
-import config as cfg
+import data_prep_config as cfg
 
 from modelscope import snapshot_download
 
@@ -99,10 +99,10 @@ def load_full_records(path: Path) -> List[dict]:
 #     return train_ids, val_ids, test_ids
 def split_dataset_ids(
     records: List[dict],
-    train_ratio: float = 0.7,
-    val_ratio: float = 0.15,
-    test_ratio: float = 0.15,
-    seed: int = 42,
+    train_ratio: float = cfg.SPLIT_TRAIN_RATIO,
+    val_ratio: float = cfg.SPLIT_VAL_RATIO,
+    test_ratio: float = cfg.SPLIT_TEST_RATIO,
+    seed: int = cfg.RANDOM_SEED,
 ) -> Tuple[set, set, set]:
     assert abs(train_ratio + val_ratio + test_ratio - 1.0) < 1e-8
 
@@ -222,7 +222,7 @@ def save_summary(
     logging.info("Saved run summary to %s", summary_path)
 
 
-def main(check_tokens: bool = False, model_name: str = "Qwen/Qwen3-8B") -> None:
+def main(check_tokens: bool = False, model_name: str = cfg.SPLIT_TOKEN_CHECK_MODEL) -> None:
     split_dir = cfg.SPLIT_DIR
     split_dir.mkdir(parents=True, exist_ok=True)
 
@@ -312,7 +312,7 @@ if __name__ == "__main__":
     main(check_tokens=args.check_tokens, model_name=args.model_name)
     
     # 做法 2：改成走 ModelScope，本地加载 tokenizer
-    # python -u 06_split_and_validate.py --check-tokens --model-name ./my_models/Qwen3-8B 2>&1 | tee data/meta/06_split_and_validate.log
+    # python -u scripts/data_prep/06_split_and_validate.py --check-tokens --model-name ./my_models/Qwen3-8B 2>&1 | tee data/meta/06_split_and_validate.log
 
     # 做法 1：先不做 token 校验
-    # python -u 06_split_and_validate.py 2>&1 | tee data/meta/06_split_and_validate.log
+    # python -u scripts/data_prep/06_split_and_validate.py 2>&1 | tee data/meta/06_split_and_validate.log

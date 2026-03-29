@@ -1,0 +1,9 @@
+=== 02_export_selected_datasets run summary ===
+
+Total selected datasets: 29
+Exported: 5
+Already existed: 24
+Failed: 0
+
+Manifest: /data/projects/shuke/code/singal_cell_annotation/data/meta/raw_export_manifest.csv
+Output dir: /data/projects/shuke/code/singal_cell_annotation/data/raw_h5ad

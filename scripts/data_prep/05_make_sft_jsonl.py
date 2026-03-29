@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 
 import pandas as pd
 
-import config as cfg
+import data_prep_config as cfg
 
 
 logging.basicConfig(
@@ -302,24 +302,5 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 
-"""
-我对这批数据的总体判断
-优点
-    流程完整跑通
-    数据格式正确
-    样本内容合理
-    标签清洗后再训练，方向对
-    已兼容 no-think 版本
-局限
-    只有 65 条样本，太少
-    数据来源只有 2 个 dataset
-    第一个 dataset 比较复杂、多组织/多疾病背景
-    第二个 dataset 基因偏少
 
-所以这批数据更适合：
-    验证训练脚本
-    做最小可运行实验
-    检查 loss、格式、推理输出是否正常
-
-不太适合直接作为“正式训练集”。
-"""
+# python -u scripts/data_prep/05_make_sft_jsonl.py 2>&1 | tee data/meta/05_make_sft_jsonl.log

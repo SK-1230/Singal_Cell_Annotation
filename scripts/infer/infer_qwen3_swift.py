@@ -87,4 +87,4 @@ if __name__ == "__main__":
     main()
 
 
-# python infer_qwen3_swift.py 2>&1 | tee data/meta/infer_qwen3_swift.log
+# python scripts/infer/infer_qwen3_swift.py 2>&1 | tee data/meta/infer_qwen3_swift.log

@@ -1,0 +1,27 @@
+=== 01_list_candidate_datasets run summary ===
+
+Select mode: auto_balanced
+
+Target tissues:
+- blood
+- lung
+- liver
+- intestine
+
+Per-tissue fetched rows:
+- blood: rows=25872063, elapsed_sec=69.12
+- lung: rows=5331844, elapsed_sec=17.61
+- liver: rows=1031867, elapsed_sec=8.48
+- intestine: rows=374931, elapsed_sec=4.68
+
+Dataset stats rows: 1086
+Filtered candidate rows: 89
+Selected rows: 29
+
+candidate_datasets.csv: /data/projects/shuke/code/singal_cell_annotation/data/meta/candidate_datasets.csv
+selected_datasets.csv: /data/projects/shuke/code/singal_cell_annotation/data/meta/selected_datasets.csv
+
+[Auto-balanced settings]
+AUTO_SELECTED_PER_TISSUE = 8
+AUTO_SELECTED_MIN_DATASETS = 24
+AUTO_SELECTED_MAX_DATASETS = 40
