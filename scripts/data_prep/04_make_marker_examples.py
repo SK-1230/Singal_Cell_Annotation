@@ -4,9 +4,15 @@ import gc
 import hashlib
 import json
 import logging
+import os
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+# Must be set before scanpy/numba is imported.
+# scanpy's wilcoxon rankdata uses numba.prange; with 72+ threads and large arrays
+# (n_threads ≈ n_chunk_columns), numba triggers SIGBUS. Limit to a safe value.
+os.environ.setdefault("NUMBA_NUM_THREADS", "8")
 
 import anndata as ad
 import numpy as np
@@ -15,6 +21,7 @@ import scanpy as sc
 from tqdm import tqdm
 
 import data_prep_config as cfg
+
 
 # Phase 1 v2: evidence-aware marker extraction
 try:
@@ -317,7 +324,9 @@ def extract_markers_v2_for_dataset(adata: ad.AnnData) -> List[dict]:
 
         # Ontology mapping
         ontology_info: Dict[str, Any] = {}
-        if _V2_AVAILABLE:
+
+        if _V2_AVAILABLE and getattr(cfg, "RUN_MARKER_V2", False):
+        # if _V2_AVAILABLE:
             # Check if obs already has ontology cols from 03
             if "cell_ontology_id" in label_cells.columns:
                 ont_id = label_cells["cell_ontology_id"].dropna()
@@ -693,6 +702,11 @@ def main() -> None:
         existing_row = manifest_rows_map.get(h5ad_path.name)
         dataset_id = get_dataset_id_from_h5ad(h5ad_path)
 
+        # 临时跳过超大且会导致崩溃的文件
+        if h5ad_path.name == "19053a82-9c89-4fb8-bd19-d7b1800b0b7b.h5ad":
+            logging.warning("Temporarily skip large file: %s", h5ad_path.name)
+            continue
+
         if should_skip_file(h5ad_path, existing_row, dataset_records_map):
             logging.info(
                 "Resume skip %s | previous status=%s | previous_examples=%s",
@@ -707,6 +721,7 @@ def main() -> None:
         try:
             logging.info("Building markers for %s", h5ad_path.name)
             adata = ad.read_h5ad(h5ad_path)
+            logging.info("[%s] read_h5ad ok shape=%s", h5ad_path.name, adata.shape)
 
             source_meta = adata.uns.get("source_meta", {}) if isinstance(adata.uns, dict) else {}
             source_dataset_id = str(source_meta.get("dataset_id", dataset_id))
@@ -822,3 +837,5 @@ if __name__ == "__main__":
     main()
 
 # nohup python -u scripts/data_prep/04_make_marker_examples.py 2>&1 | tee data/meta/04_make_marker_examples.log
+
+#  nohup bash -lc 'export PYTHONPATH="$PWD/src:$PYTHONPATH"; python -u scripts/data_prep/04_make_marker_examples.py >> data/meta/04_make_marker_examples.log 2>&1' >/dev/null 2>&1 &

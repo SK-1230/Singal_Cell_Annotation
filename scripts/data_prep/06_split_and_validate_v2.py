@@ -837,3 +837,6 @@ if __name__ == "__main__":
     # 示例运行：
     # cd /data/projects/shuke/code/singal_cell_annotation
     # nohup python -u scripts/data_prep/06_split_and_validate_v2.py 2>&1 | tee data/meta/06_split_and_validate_v2.log
+
+    # nohup bash -lc 'export PYTHONPATH="$PWD/src:$PYTHONPATH"; python -u scripts/data_prep/06_split_and_validate_v2.py >> data/meta/06_split_and_validate_v2.log 2>&1' >/dev/null 2>&1 &
+    # grep -E "Generated|Building markers|Make markers:" data/meta/06_split_and_validate_v2.log | tail -10

@@ -279,20 +279,41 @@ def main() -> None:
 
     results: List[Dict[str, Any]] = []
 
-    with cellxgene_census.open_soma(census_version=version) as census:
-        logging.info("open_soma() succeeded")
+    for _, row in tqdm(
+        selected.iterrows(),
+        total=len(selected),
+        desc="Export datasets",
+        unit="dataset",
+    ):
+        # 每个数据集使用独立的 SOMA 连接，避免共享长连接在大文件下载时 TileDB C++ 层超时
+        # 导致进程被直接 abort（Python 的 try/except 无法捕获 C++ std::abort/SIGSEGV）
+        dataset_id = str(row["dataset_id"])
+        result = None
+        for soma_attempt in range(1, cfg.EXPORT_MAX_RETRIES + 1):
+            try:
+                logging.info("open_soma() attempt %d for dataset_id=%s", soma_attempt, dataset_id)
+                with cellxgene_census.open_soma(census_version=version) as census:
+                    result = export_one_dataset(census=census, row=row)
+                break
+            except Exception as e:
+                logging.exception("open_soma() failed on attempt %d for %s", soma_attempt, dataset_id)
+                if soma_attempt < cfg.EXPORT_MAX_RETRIES:
+                    logging.info("will retry open_soma() after %ds...", cfg.EXPORT_RETRY_SLEEP_SECONDS)
+                    time.sleep(cfg.EXPORT_RETRY_SLEEP_SECONDS)
+                else:
+                    result = {
+                        "dataset_id": dataset_id,
+                        "dataset_title": str(row.get("dataset_title", "")),
+                        "output_path": str(cfg.RAW_H5AD_DIR / f"{dataset_id}.h5ad"),
+                        "status": "failed",
+                        "n_obs": None, "n_vars": None, "elapsed_sec": None,
+                        "attempts": soma_attempt,
+                        "error": repr(e),
+                    }
+        results.append(result)
 
-        for _, row in tqdm(
-            selected.iterrows(),
-            total=len(selected),
-            desc="Export datasets",
-            unit="dataset",
-        ):
-            result = export_one_dataset(census=census, row=row)
-            results.append(result)
-
-            # 每完成一个就写一次 manifest，防止中途断掉后完全没记录
-            save_manifest(results)
+        # 每完成一个就写一次 manifest，防止中途断掉后完全没记录
+        save_manifest(results)
 
     save_run_summary(results)
 

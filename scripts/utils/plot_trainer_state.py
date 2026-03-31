@@ -95,7 +95,7 @@ def main():
     parser.add_argument(
         "--output_dir",
         type=str,
-        default=None,
+        default='/data/projects/shuke/code/singal_cell_annotation/output/qwen3_4b_sc_sft_hf_trl_v2/images',
         help="Directory to save images. Default: sibling 'images' folder next to trainer_state.json",
     )
     args = parser.parse_args()

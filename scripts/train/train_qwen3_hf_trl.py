@@ -9,15 +9,18 @@ from datasets import Dataset
 from peft import LoraConfig
 from transformers import AutoModelForCausalLM, AutoTokenizer, set_seed
 from trl import SFTConfig, SFTTrainer
-
+from datetime import datetime
 
 # =========================
 # 可改参数
 # =========================
 BASE_MODEL_PATH = "/data/projects/shuke/code/singal_cell_annotation/my_models/Qwen/Qwen3-4B"
-TRAIN_FILE = "/data/projects/shuke/code/singal_cell_annotation/data/splits/train_messages_no_think.jsonl"
-VAL_FILE = "/data/projects/shuke/code/singal_cell_annotation/data/splits/val_messages_no_think.jsonl"
-OUTPUT_DIR = "/data/projects/shuke/code/singal_cell_annotation/output/qwen3_4b_sc_sft_hf_trl_v1"
+TRAIN_FILE = "/data/projects/shuke/code/singal_cell_annotation/data/splits/train_messages_no_think_v2.jsonl"
+VAL_FILE = "/data/projects/shuke/code/singal_cell_annotation/data/splits/val_messages_no_think_v2.jsonl"
+# OUTPUT_DIR = "/data/projects/shuke/code/singal_cell_annotation/output/qwen3_4b_sc_sft_hf_trl_v2"
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+OUTPUT_DIR = f"/data/projects/shuke/code/singal_cell_annotation/output/qwen3_4b_sc_sft_hf_trl_v2_{timestamp}"
+
 
 SEED = 42
 MAX_LENGTH = 1024
@@ -35,7 +38,7 @@ SAVE_STEPS = 5
 SAVE_TOTAL_LIMIT = 2
 DATALOADER_NUM_WORKERS = 2
 
-LORA_R = 8
+LORA_R = 16  
 LORA_ALPHA = 32
 LORA_DROPOUT = 0.05
 LORA_TARGET_MODULES = "all-linear"

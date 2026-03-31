@@ -252,3 +252,6 @@ if __name__ == "__main__":
     main()
 
 # python -u scripts/data_prep/08_build_marker_kb.py 2>&1 | tee data/meta/08_build_marker_kb.log
+
+# nohup bash -lc 'export PYTHONPATH="$PWD/src:$PYTHONPATH"; python -u scripts/data_prep/08_build_marker_kb.py >> data/meta/08_build_marker_kb.log 2>&1' >/dev/null 2>&1 &  t
+# # grep -E "Generated|Building markers|Make markers:" data/meta/08_build_marker_kb.log | tail -10

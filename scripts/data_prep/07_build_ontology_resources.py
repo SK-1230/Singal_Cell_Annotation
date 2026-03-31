@@ -201,3 +201,7 @@ if __name__ == "__main__":
     main()
 
 # python -u scripts/data_prep/07_build_ontology_resources.py 2>&1 | tee data/meta/07_build_ontology_resources.log
+
+
+# nohup bash -lc 'export PYTHONPATH="$PWD/src:$PYTHONPATH"; python -u scripts/data_prep/07_build_ontology_resources.py >> data/meta/07_build_ontology_resources.log 2>&1' >/dev/null 2>&1 &
+# grep -E "Generated|Building markers|Make markers:" data/meta/07_build_ontology_resources.log | tail -10

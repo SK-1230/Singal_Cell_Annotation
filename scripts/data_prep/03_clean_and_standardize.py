@@ -17,15 +17,6 @@ from tqdm import tqdm
 import data_prep_config as cfg
 
 
-
-from pathlib import Path
-import sys
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-SRC_DIR = PROJECT_DIR / "src"
-if str(SRC_DIR) not in sys.path:
-    sys.path.insert(0, str(SRC_DIR))
-
 # Phase 1: ontology-aware label normalization
 try:
     from sca.data.label_normalization import normalize_and_map, init_alias_table

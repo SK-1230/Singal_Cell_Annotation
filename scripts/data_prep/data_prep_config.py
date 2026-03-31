@@ -102,6 +102,9 @@ TARGET_TISSUES = [
     "lung",
     "liver",
     "intestine",
+    "kidney",
+    "brain",
+    "skin",
 ]
 
 
@@ -111,7 +114,7 @@ TARGET_TISSUES = [
 
 # 数据集包含的细胞数下限 / 上限
 MIN_DATASET_CELLS = 3_000
-MAX_DATASET_CELLS = 120_000
+MAX_DATASET_CELLS = 350_000
 
 # 数据集至少包含的独特细胞类型数量
 MIN_UNIQUE_CELL_TYPES = 6
@@ -132,15 +135,15 @@ SELECT_MODE = "auto_balanced"
 
 # 自动模式下，每个 tissue 目标选择的数据集数量
 # 例如 8 表示对 blood/lung/liver/intestine 各自优先选 8 个左右
-AUTO_SELECTED_PER_TISSUE = 8
+AUTO_SELECTED_PER_TISSUE = 12
 
 # 自动模式下，selected 的全局最大 dataset 数
 # 如果每个 tissue 的目标数量之和去重后仍超过该值，则只保留得分更高的前若干个
-AUTO_SELECTED_MAX_DATASETS = 40
+AUTO_SELECTED_MAX_DATASETS = 80
 
 # 自动模式下，全局最少选择的数据集数量
 # 如果按 tissue 配额选完后仍不足该数量，会从全局候选中继续补齐
-AUTO_SELECTED_MIN_DATASETS = 24
+AUTO_SELECTED_MIN_DATASETS = 40
 
 # 是否优先偏好"单 tissue"数据集
 AUTO_PREFER_SINGLE_TISSUE = True
@@ -267,6 +270,9 @@ UNINFORMATIVE_GENES = {
 BAD_GENE_PREFIXES = (
     "MT-", "RPL", "RPS", "HB", "HBA", "HBB", "IGJ",
 )
+
+# 为了测试代码，临时加一个设定
+# RUN_MARKER_V2 = False
 
 
 # =========================================================

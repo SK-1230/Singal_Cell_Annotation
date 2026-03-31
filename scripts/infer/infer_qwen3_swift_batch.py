@@ -8,12 +8,16 @@ import torch
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from tqdm import tqdm
+from datetime import datetime
+
 
 # ===== 可改参数 =====
 BASE_MODEL_PATH = "/data/projects/shuke/code/singal_cell_annotation/my_models/Qwen/Qwen3-4B"
-ADAPTER_PATH = "/data/projects/shuke/code/singal_cell_annotation/output/qwen3_4b_sc_sft_swift_v2/v0-20260326-181619/checkpoint-175"
-TEST_FILE = "/data/projects/shuke/code/singal_cell_annotation/data/splits/test_messages_no_think.jsonl"
-OUTPUT_DIR = "/data/projects/shuke/code/singal_cell_annotation/output/infer_qwen3_swift_batch"
+ADAPTER_PATH = "/data/projects/shuke/code/singal_cell_annotation/output/qwen3_4b_sc_sft_hf_trl_v2_20260331_210804"
+TEST_FILE = "/data/projects/shuke/code/singal_cell_annotation/data/splits/test_messages_no_think_v2.jsonl"
+
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+OUTPUT_DIR = f"/data/projects/shuke/code/singal_cell_annotation/output/infer_hf_trl_v2_test_{timestamp}"
 MAX_NEW_TOKENS = 256
 
 

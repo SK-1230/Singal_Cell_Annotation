@@ -1,0 +1,8 @@
+{
+  "venvPath": ".",
+  "pythonVersion": "3.10",
+  "extraPaths": ["src"],
+  "include": ["src", "scripts"],
+  "exclude": ["data", "output", "my_models", "resources"],
+  "reportPrivateImportUsage": "none"
+}

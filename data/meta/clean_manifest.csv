@@ -1,34 +1,63 @@
-dataset_id,file_name,status,n_obs_before,n_vars_before,n_obs_after,n_vars_after,unique_cell_types_after,tissues,elapsed_sec,error
-02792605-4760-4023-82ad-40fc4458a5db,02792605-4760-4023-82ad-40fc4458a5db.h5ad,cleaned,65396.0,61497.0,60236.0,23345.0,26.0,liver,24.1,
-093d3bfe-6f0f-4ac0-a7a1-829f94d0a49f,093d3bfe-6f0f-4ac0-a7a1-829f94d0a49f.h5ad,cleaned,193108.0,61497.0,193039.0,28355.0,57.0,lung;respiratory system,43.91,
-19053a82-9c89-4fb8-bd19-d7b1800b0b7b,19053a82-9c89-4fb8-bd19-d7b1800b0b7b.h5ad,cleaned,594283.0,61497.0,592038.0,17987.0,70.0,colon;esophagus;intestine;large intestine;lymph node;small intestine;stomach,103.48,
-1b9d8702-5af8-4142-85ed-020eb06ec4f6,1b9d8702-5af8-4142-85ed-020eb06ec4f6.h5ad,cleaned,329762.0,61497.0,325310.0,27319.0,33.0,blood;bone marrow;colon;endocrine gland;lamina propria;liver;lung;lymph node;musculature;omentum;small intestine;spleen,96.36,
-1d89d081-f43d-401a-be76-bd6ef9259f4e,1d89d081-f43d-401a-be76-bd6ef9259f4e.h5ad,cleaned,10352.0,61497.0,10278.0,17093.0,11.0,liver,2.92,
-2672b679-8048-4f5e-9786-f1b196ccfd08,2672b679-8048-4f5e-9786-f1b196ccfd08.h5ad,cleaned,57019.0,61497.0,56973.0,22048.0,19.0,lung,12.27,
-2ac76f1b-43ef-4271-8686-2f165570989f,2ac76f1b-43ef-4271-8686-2f165570989f.h5ad,cleaned,48226.0,61497.0,48008.0,25479.0,24.0,lung,11.1,
-3c75a463-6a87-4132-83a8-c3002624394d,3c75a463-6a87-4132-83a8-c3002624394d.h5ad,cleaned,95064.0,61497.0,95064.0,18353.0,24.0,blood,23.18,
-3dc61ca1-ce40-46b6-8337-f27260fd9a03,3dc61ca1-ce40-46b6-8337-f27260fd9a03.h5ad,cleaned,71752.0,61497.0,71359.0,24065.0,60.0,lung,30.28,
-429d21fd-bb9a-4abf-922b-c15138524bdd,429d21fd-bb9a-4abf-922b-c15138524bdd.h5ad,cleaned,108613.0,61497.0,100339.0,23340.0,12.0,lung,36.47,
-43560d7c-acd6-4ede-830d-c9ffc6cd0862,43560d7c-acd6-4ede-830d-c9ffc6cd0862.h5ad,cleaned,15216.0,61497.0,13719.0,16919.0,8.0,liver,3.01,
-471647b3-04fe-4c76-8372-3264feb950e8,471647b3-04fe-4c76-8372-3264feb950e8.h5ad,cleaned,27998.0,61497.0,27998.0,19972.0,12.0,blood;bone marrow;liver,12.16,
-51d9716c-50bb-4fd8-8d1e-7d9329969cb7,51d9716c-50bb-4fd8-8d1e-7d9329969cb7.h5ad,cleaned,11177.0,61497.0,11177.0,21551.0,8.0,intestine,9.4,
-5af90777-6760-4003-9dba-8f945fec6fdf,5af90777-6760-4003-9dba-8f945fec6fdf.h5ad,cleaned,270855.0,61497.0,255416.0,19155.0,42.0,adipose tissue;adrenal gland;blood;kidney;vasculature,49.05,
-5b25a46f-f1cf-4caa-9e10-6ab81dfe9174,5b25a46f-f1cf-4caa-9e10-6ab81dfe9174.h5ad,cleaned,12822.0,61497.0,12588.0,16346.0,17.0,blood,3.57,
-5e717147-0f75-4de1-8bd2-6fda01b8d75f,5e717147-0f75-4de1-8bd2-6fda01b8d75f.h5ad,cleaned,90957.0,61497.0,90957.0,20973.0,22.0,blood,23.18,
-6c87755e-a671-41a8-9c7e-4e43b850a57b,6c87755e-a671-41a8-9c7e-4e43b850a57b.h5ad,cleaned,157531.0,61497.0,157501.0,24744.0,14.0,axilla;breast;liver;lung;neck;skeletal system,49.54,
-7c497c66-c2e2-4291-8b96-339e5e65f314,7c497c66-c2e2-4291-8b96-339e5e65f314.h5ad,cleaned,76298.0,61497.0,75834.0,33390.0,26.0,lung,35.33,
-84cfa5aa-a0d1-415e-ac47-eb66c9cf8170,84cfa5aa-a0d1-415e-ac47-eb66c9cf8170.h5ad,cleaned,72710.0,61497.0,72028.0,23324.0,18.0,liver,21.54,
-8c42cfd0-0b0a-46d5-910c-fc833d83c45e,8c42cfd0-0b0a-46d5-910c-fc833d83c45e.h5ad,cleaned,65662.0,61497.0,65501.0,18754.0,40.0,blood;lung,20.5,
-a199ca73-035d-44e2-9893-4c493151db21,a199ca73-035d-44e2-9893-4c493151db21.h5ad,cleaned,105827.0,61497.0,105827.0,22486.0,16.0,blood,24.0,
-b252b015-b488-4d5c-b16e-968c13e48a2c,b252b015-b488-4d5c-b16e-968c13e48a2c.h5ad,skipped,,,,,,,0.0,file_too_large: 24.32 GB
-b617ee1b-f8c8-4de9-b82b-e803ab93550d,b617ee1b-f8c8-4de9-b82b-e803ab93550d.h5ad,exists_cleaned_complete,,,,,,,0.0,
-b61a921b-7fa3-4b42-b455-aaaf32447920,b61a921b-7fa3-4b42-b455-aaaf32447920.h5ad,cleaned,115788.0,61497.0,115005.0,27272.0,43.0,lung;respiratory system,23.36,
-c2a461b1-0c15-4047-9fcb-1f966fe55100,c2a461b1-0c15-4047-9fcb-1f966fe55100.h5ad,cleaned,97499.0,61497.0,97499.0,19483.0,26.0,blood,15.08,
-d18736c3-6292-4379-919a-d6d973204c87,d18736c3-6292-4379-919a-d6d973204c87.h5ad,cleaned,108717.0,61497.0,108717.0,17650.0,15.0,blood,4.42,
-d3566d6a-a455-4a15-980f-45eb29114cab,d3566d6a-a455-4a15-980f-45eb29114cab.h5ad,exists_cleaned_complete,,,,,,,0.0,
-d6dfdef1-406d-4efb-808c-3c5eddbfe0cb,d6dfdef1-406d-4efb-808c-3c5eddbfe0cb.h5ad,cleaned,57723.0,61497.0,57723.0,26190.0,9.0,colon;intestine;large intestine,12.63,
-ddb22b3d-a75c-4dd1-9730-dff7fc8ca530,ddb22b3d-a75c-4dd1-9730-dff7fc8ca530.h5ad,cleaned,73295.0,61497.0,73295.0,26124.0,12.0,liver,12.98,
-e3ed2ba4-edf5-40ac-8750-8a417ad1eefe,e3ed2ba4-edf5-40ac-8750-8a417ad1eefe.h5ad,cleaned,75104.0,61497.0,75104.0,27225.0,14.0,liver,21.75,
-e40c6272-af77-4a10-9385-62a398884f27,e40c6272-af77-4a10-9385-62a398884f27.h5ad,cleaned,65088.0,61497.0,65088.0,27531.0,9.0,colon;intestine;large intestine,16.89,
-f7c1c579-2dc0-47e2-ba19-8165c5a0e353,f7c1c579-2dc0-47e2-ba19-8165c5a0e353.h5ad,skipped,,,,,,,0.0,file_too_large: 26.86 GB
-f7ca7eb9-0919-4eba-99a1-21ba382b4174,f7ca7eb9-0919-4eba-99a1-21ba382b4174.h5ad,cleaned,11103.0,61497.0,11103.0,21733.0,8.0,intestine,36.53,
+dataset_id,file_name,status,n_obs_before,n_vars_before,n_obs_after,n_vars_after,unique_cell_types_after,tissues,n_mapped_ontology_labels,n_unmapped_ontology_labels,n_unique_cl_ids,elapsed_sec,error
+02792605-4760-4023-82ad-40fc4458a5db,02792605-4760-4023-82ad-40fc4458a5db.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+093d3bfe-6f0f-4ac0-a7a1-829f94d0a49f,093d3bfe-6f0f-4ac0-a7a1-829f94d0a49f.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+0b4a15a7-4e9e-4555-9733-2423e5c66469,0b4a15a7-4e9e-4555-9733-2423e5c66469.h5ad,failed,,,,,,,,,,,"ValueError('Length of passed value for obs_names is 48783, but this AnnData has shape: (48649, 22559)')"
+0bae7ebf-eb54-46a6-be9a-3461cecefa4c,0bae7ebf-eb54-46a6-be9a-3461cecefa4c.h5ad,failed,,,,,,,,,,,"ValueError('Length of passed value for obs_names is 27568, but this AnnData has shape: (27507, 20452)')"
+145dcf6a-2461-4fa3-a0af-7fc56db0bd33,145dcf6a-2461-4fa3-a0af-7fc56db0bd33.h5ad,failed,,,,,,,,,,,"MemoryError((1129675235520,), dtype('int16'))"
+19053a82-9c89-4fb8-bd19-d7b1800b0b7b,19053a82-9c89-4fb8-bd19-d7b1800b0b7b.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+1b9d8702-5af8-4142-85ed-020eb06ec4f6,1b9d8702-5af8-4142-85ed-020eb06ec4f6.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+1d89d081-f43d-401a-be76-bd6ef9259f4e,1d89d081-f43d-401a-be76-bd6ef9259f4e.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+21722308-5091-4b63-9c07-4f116ab9a7b3,21722308-5091-4b63-9c07-4f116ab9a7b3.h5ad,failed,,,,,,,,,,,"MemoryError((1449749885584,), dtype('int16'))"
+21d3e683-80a4-4d9b-bc89-ebb2df513dde,21d3e683-80a4-4d9b-bc89-ebb2df513dde.h5ad,failed,,,,,,,,,,,"MemoryError((567734220928,), dtype('int16'))"
+2672b679-8048-4f5e-9786-f1b196ccfd08,2672b679-8048-4f5e-9786-f1b196ccfd08.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+2a498ace-872a-4935-984b-1afa70fd9886,2a498ace-872a-4935-984b-1afa70fd9886.h5ad,failed,,,,,,,,,,,"ValueError('Length of passed value for obs_names is 336746, but this AnnData has shape: (336723, 21261)')"
+2ac76f1b-43ef-4271-8686-2f165570989f,2ac76f1b-43ef-4271-8686-2f165570989f.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+30c2a6fd-d547-460f-a5e7-44c62a2af7ad,30c2a6fd-d547-460f-a5e7-44c62a2af7ad.h5ad,failed,,,,,,,,,,,"ValueError('Length of passed value for obs_names is 207952, but this AnnData has shape: (207872, 22634)')"
+3c75a463-6a87-4132-83a8-c3002624394d,3c75a463-6a87-4132-83a8-c3002624394d.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+3dc61ca1-ce40-46b6-8337-f27260fd9a03,3dc61ca1-ce40-46b6-8337-f27260fd9a03.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+3e55180c-780a-4424-9434-5296640ffc0d,3e55180c-780a-4424-9434-5296640ffc0d.h5ad,failed,,,,,,,,,,,"ValueError('Length of passed value for obs_names is 7774, but this AnnData has shape: (7710, 21784)')"
+429d21fd-bb9a-4abf-922b-c15138524bdd,429d21fd-bb9a-4abf-922b-c15138524bdd.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+43560d7c-acd6-4ede-830d-c9ffc6cd0862,43560d7c-acd6-4ede-830d-c9ffc6cd0862.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+471647b3-04fe-4c76-8372-3264feb950e8,471647b3-04fe-4c76-8372-3264feb950e8.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+4b83f213-b96b-4c87-a884-9b81faddb194,4b83f213-b96b-4c87-a884-9b81faddb194.h5ad,failed,,,,,,,,,,,"ValueError('Length of passed value for obs_names is 22237, but this AnnData has shape: (22215, 23107)')"
+51d9716c-50bb-4fd8-8d1e-7d9329969cb7,51d9716c-50bb-4fd8-8d1e-7d9329969cb7.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+576f193c-75d0-4a11-bd25-8676587e6dc2,576f193c-75d0-4a11-bd25-8676587e6dc2.h5ad,failed,,,,,,,,,,,"ValueError('Length of passed value for obs_names is 147137, but this AnnData has shape: (147090, 22009)')"
+58f43044-cd3c-42b8-bc0b-3498eb236359,58f43044-cd3c-42b8-bc0b-3498eb236359.h5ad,failed,,,,,,,,,,,"ValueError('Length of passed value for obs_names is 156726, but this AnnData has shape: (156543, 27736)')"
+5af90777-6760-4003-9dba-8f945fec6fdf,5af90777-6760-4003-9dba-8f945fec6fdf.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+5b25a46f-f1cf-4caa-9e10-6ab81dfe9174,5b25a46f-f1cf-4caa-9e10-6ab81dfe9174.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+5e717147-0f75-4de1-8bd2-6fda01b8d75f,5e717147-0f75-4de1-8bd2-6fda01b8d75f.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+60a29d0b-1a37-4447-ac32-00d701580b47,60a29d0b-1a37-4447-ac32-00d701580b47.h5ad,failed,,,,,,,,,,,"ValueError('Length of passed value for obs_names is 7813, but this AnnData has shape: (7662, 21385)')"
+6c87755e-a671-41a8-9c7e-4e43b850a57b,6c87755e-a671-41a8-9c7e-4e43b850a57b.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+774c18c5-efa1-4dc5-9e5e-2c824bab2e34,774c18c5-efa1-4dc5-9e5e-2c824bab2e34.h5ad,failed,,,,,,,,,,,"ValueError('Length of passed value for obs_names is 3589, but this AnnData has shape: (3568, 17544)')"
+7b55fe5c-d5c8-48e0-a1a3-54c5b9074f3f,7b55fe5c-d5c8-48e0-a1a3-54c5b9074f3f.h5ad,failed,,,,,,,,,,,"ValueError('Length of passed value for obs_names is 116445, but this AnnData has shape: (116373, 33369)')"
+7c497c66-c2e2-4291-8b96-339e5e65f314,7c497c66-c2e2-4291-8b96-339e5e65f314.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+7f7faf6b-f11d-4f07-bc1c-188a4472748d,7f7faf6b-f11d-4f07-bc1c-188a4472748d.h5ad,failed,,,,,,,,,,,"MemoryError((11679103973376,), dtype('int16'))"
+84cfa5aa-a0d1-415e-ac47-eb66c9cf8170,84cfa5aa-a0d1-415e-ac47-eb66c9cf8170.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+8c42cfd0-0b0a-46d5-910c-fc833d83c45e,8c42cfd0-0b0a-46d5-910c-fc833d83c45e.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+9968be68-ab65-4a38-9e1a-c9b6abece194,9968be68-ab65-4a38-9e1a-c9b6abece194.h5ad,failed,,,,,,,,,,,"MemoryError((2228936137776,), dtype('int16'))"
+9ea768a2-87ab-46b6-a73d-c4e915f25af3,9ea768a2-87ab-46b6-a73d-c4e915f25af3.h5ad,failed,,,,,,,,,,,"ValueError('Length of passed value for obs_names is 40268, but this AnnData has shape: (40090, 20467)')"
+a199ca73-035d-44e2-9893-4c493151db21,a199ca73-035d-44e2-9893-4c493151db21.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+a1b9c51e-a408-4f7f-bccb-abefe20ae2a5,a1b9c51e-a408-4f7f-bccb-abefe20ae2a5.h5ad,failed,,,,,,,,,,,"ValueError('Length of passed value for obs_names is 16245, but this AnnData has shape: (16171, 16711)')"
+b252b015-b488-4d5c-b16e-968c13e48a2c,b252b015-b488-4d5c-b16e-968c13e48a2c.h5ad,skipped,,,,,,,,,,0.0,file_too_large: 24.32 GB
+b2dda353-0c96-42df-8dcd-1ea7429a6feb,b2dda353-0c96-42df-8dcd-1ea7429a6feb.h5ad,failed,,,,,,,,,,,"MemoryError((738633807840,), dtype('int16'))"
+b617ee1b-f8c8-4de9-b82b-e803ab93550d,b617ee1b-f8c8-4de9-b82b-e803ab93550d.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+b61a921b-7fa3-4b42-b455-aaaf32447920,b61a921b-7fa3-4b42-b455-aaaf32447920.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+bd65a70f-b274-4133-b9dd-0d1431b6af34,bd65a70f-b274-4133-b9dd-0d1431b6af34.h5ad,failed,,,,,,,,,,,"MemoryError((1378783107968,), dtype('int16'))"
+c2a461b1-0c15-4047-9fcb-1f966fe55100,c2a461b1-0c15-4047-9fcb-1f966fe55100.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+cf83c98a-3791-4537-bbde-a719f6d73c13,cf83c98a-3791-4537-bbde-a719f6d73c13.h5ad,failed,,,,,,,,,,,"MemoryError((1034087330976,), dtype('int16'))"
+d18736c3-6292-4379-919a-d6d973204c87,d18736c3-6292-4379-919a-d6d973204c87.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+d3566d6a-a455-4a15-980f-45eb29114cab,d3566d6a-a455-4a15-980f-45eb29114cab.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+d6dfdef1-406d-4efb-808c-3c5eddbfe0cb,d6dfdef1-406d-4efb-808c-3c5eddbfe0cb.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+d7dcfd8f-2ee7-4385-b9ac-e074c23ed190,d7dcfd8f-2ee7-4385-b9ac-e074c23ed190.h5ad,failed,,,,,,,,,,,"ValueError('Length of passed value for obs_names is 27197, but this AnnData has shape: (27138, 22692)')"
+dc30c3ec-46d6-4cd8-8ec1-b544a3d0f503,dc30c3ec-46d6-4cd8-8ec1-b544a3d0f503.h5ad,failed,,,,,,,,,,,"MemoryError((1274505393920,), dtype('int16'))"
+ddb22b3d-a75c-4dd1-9730-dff7fc8ca530,ddb22b3d-a75c-4dd1-9730-dff7fc8ca530.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+dea717d4-7bc0-4e46-950f-fd7e1cc8df7d,dea717d4-7bc0-4e46-950f-fd7e1cc8df7d.h5ad,failed,,,,,,,,,,,"MemoryError((4779395227200,), dtype('int16'))"
+e04daea4-4412-45b5-989e-76a9be070a89,e04daea4-4412-45b5-989e-76a9be070a89.h5ad,failed,,,,,,,,,,,"ValueError('Length of passed value for obs_names is 9409, but this AnnData has shape: (9090, 30141)')"
+e3ed2ba4-edf5-40ac-8750-8a417ad1eefe,e3ed2ba4-edf5-40ac-8750-8a417ad1eefe.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+e40c6272-af77-4a10-9385-62a398884f27,e40c6272-af77-4a10-9385-62a398884f27.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+e84f2780-51e8-4cfa-8aa0-13bbfef677c7,e84f2780-51e8-4cfa-8aa0-13bbfef677c7.h5ad,failed,,,,,,,,,,,"MemoryError((1987069773248,), dtype('int16'))"
+eb499fd8-7000-419f-8854-926b9b61b11f,eb499fd8-7000-419f-8854-926b9b61b11f.h5ad,failed,,,,,,,,,,,"OSError('Unable to synchronously open file (truncated file: eof = 159383552, sblock->base_addr = 0, stored_eof = 2068995235)')"
+ed5d841d-6346-47d4-ab2f-7119ad7e3a35,ed5d841d-6346-47d4-ab2f-7119ad7e3a35.h5ad,failed,,,,,,,,,,,"ValueError('Length of passed value for obs_names is 161159, but this AnnData has shape: (161119, 20261)')"
+f7c1c579-2dc0-47e2-ba19-8165c5a0e353,f7c1c579-2dc0-47e2-ba19-8165c5a0e353.h5ad,skipped,,,,,,,,,,0.0,file_too_large: 26.86 GB
+f7ca7eb9-0919-4eba-99a1-21ba382b4174,f7ca7eb9-0919-4eba-99a1-21ba382b4174.h5ad,exists_cleaned_complete,,,,,,,,,,0.0,
+f801b7a9-80a6-4d09-9161-71474deb58ae,f801b7a9-80a6-4d09-9161-71474deb58ae.h5ad,failed,,,,,,,,,,,"ValueError('Length of passed value for obs_names is 5984, but this AnnData has shape: (5853, 18109)')"

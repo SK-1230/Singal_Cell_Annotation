@@ -481,3 +481,6 @@ if __name__ == "__main__":
 
 
 # python -u scripts/data_prep/05_make_sft_jsonl.py 2>&1 | tee data/meta/05_make_sft_jsonl.log
+
+# nohup bash -lc 'export PYTHONPATH="$PWD/src:$PYTHONPATH"; python -u scripts/data_prep/05_make_sft_jsonl.py >> data/meta/05_make_sft_jsonl.log 2>&1' >/dev/null 2>&1 &
+# grep -E "Generated|Building markers|Make markers:" data/meta/05_make_sft_jsonl.log | tail -10

@@ -1,9 +1,40 @@
 === 03_clean_and_standardize run summary ===
 
-Total files seen: 33
+Total files seen: 62
 Success-like: 31
 Skipped: 2
-Failed: 0
+Failed: 29
 
 Manifest: /data/projects/shuke/code/singal_cell_annotation/data/meta/clean_manifest.csv
 Output dir: /data/projects/shuke/code/singal_cell_annotation/data/clean_h5ad
+
+Failed files:
+- 0b4a15a7-4e9e-4555-9733-2423e5c66469.h5ad | error=ValueError('Length of passed value for obs_names is 48783, but this AnnData has shape: (48649, 22559)')
+- 0bae7ebf-eb54-46a6-be9a-3461cecefa4c.h5ad | error=ValueError('Length of passed value for obs_names is 27568, but this AnnData has shape: (27507, 20452)')
+- 145dcf6a-2461-4fa3-a0af-7fc56db0bd33.h5ad | error=MemoryError((1129675235520,), dtype('int16'))
+- 21722308-5091-4b63-9c07-4f116ab9a7b3.h5ad | error=MemoryError((1449749885584,), dtype('int16'))
+- 21d3e683-80a4-4d9b-bc89-ebb2df513dde.h5ad | error=MemoryError((567734220928,), dtype('int16'))
+- 2a498ace-872a-4935-984b-1afa70fd9886.h5ad | error=ValueError('Length of passed value for obs_names is 336746, but this AnnData has shape: (336723, 21261)')
+- 30c2a6fd-d547-460f-a5e7-44c62a2af7ad.h5ad | error=ValueError('Length of passed value for obs_names is 207952, but this AnnData has shape: (207872, 22634)')
+- 3e55180c-780a-4424-9434-5296640ffc0d.h5ad | error=ValueError('Length of passed value for obs_names is 7774, but this AnnData has shape: (7710, 21784)')
+- 4b83f213-b96b-4c87-a884-9b81faddb194.h5ad | error=ValueError('Length of passed value for obs_names is 22237, but this AnnData has shape: (22215, 23107)')
+- 576f193c-75d0-4a11-bd25-8676587e6dc2.h5ad | error=ValueError('Length of passed value for obs_names is 147137, but this AnnData has shape: (147090, 22009)')
+- 58f43044-cd3c-42b8-bc0b-3498eb236359.h5ad | error=ValueError('Length of passed value for obs_names is 156726, but this AnnData has shape: (156543, 27736)')
+- 60a29d0b-1a37-4447-ac32-00d701580b47.h5ad | error=ValueError('Length of passed value for obs_names is 7813, but this AnnData has shape: (7662, 21385)')
+- 774c18c5-efa1-4dc5-9e5e-2c824bab2e34.h5ad | error=ValueError('Length of passed value for obs_names is 3589, but this AnnData has shape: (3568, 17544)')
+- 7b55fe5c-d5c8-48e0-a1a3-54c5b9074f3f.h5ad | error=ValueError('Length of passed value for obs_names is 116445, but this AnnData has shape: (116373, 33369)')
+- 7f7faf6b-f11d-4f07-bc1c-188a4472748d.h5ad | error=MemoryError((11679103973376,), dtype('int16'))
+- 9968be68-ab65-4a38-9e1a-c9b6abece194.h5ad | error=MemoryError((2228936137776,), dtype('int16'))
+- 9ea768a2-87ab-46b6-a73d-c4e915f25af3.h5ad | error=ValueError('Length of passed value for obs_names is 40268, but this AnnData has shape: (40090, 20467)')
+- a1b9c51e-a408-4f7f-bccb-abefe20ae2a5.h5ad | error=ValueError('Length of passed value for obs_names is 16245, but this AnnData has shape: (16171, 16711)')
+- b2dda353-0c96-42df-8dcd-1ea7429a6feb.h5ad | error=MemoryError((738633807840,), dtype('int16'))
+- bd65a70f-b274-4133-b9dd-0d1431b6af34.h5ad | error=MemoryError((1378783107968,), dtype('int16'))
+- cf83c98a-3791-4537-bbde-a719f6d73c13.h5ad | error=MemoryError((1034087330976,), dtype('int16'))
+- d7dcfd8f-2ee7-4385-b9ac-e074c23ed190.h5ad | error=ValueError('Length of passed value for obs_names is 27197, but this AnnData has shape: (27138, 22692)')
+- dc30c3ec-46d6-4cd8-8ec1-b544a3d0f503.h5ad | error=MemoryError((1274505393920,), dtype('int16'))
+- dea717d4-7bc0-4e46-950f-fd7e1cc8df7d.h5ad | error=MemoryError((4779395227200,), dtype('int16'))
+- e04daea4-4412-45b5-989e-76a9be070a89.h5ad | error=ValueError('Length of passed value for obs_names is 9409, but this AnnData has shape: (9090, 30141)')
+- e84f2780-51e8-4cfa-8aa0-13bbfef677c7.h5ad | error=MemoryError((1987069773248,), dtype('int16'))
+- eb499fd8-7000-419f-8854-926b9b61b11f.h5ad | error=OSError('Unable to synchronously open file (truncated file: eof = 159383552, sblock->base_addr = 0, stored_eof = 2068995235)')
+- ed5d841d-6346-47d4-ab2f-7119ad7e3a35.h5ad | error=ValueError('Length of passed value for obs_names is 161159, but this AnnData has shape: (161119, 20261)')
+- f801b7a9-80a6-4d09-9161-71474deb58ae.h5ad | error=ValueError('Length of passed value for obs_names is 5984, but this AnnData has shape: (5853, 18109)')
