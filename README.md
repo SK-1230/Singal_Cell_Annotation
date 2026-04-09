@@ -1,59 +1,42 @@
 # Single-Cell Cell Type Annotation with Qwen3
 
-一个面向 **single-cell RNA-seq（scRNA-seq）细胞类型注释** 的数据构建与大模型微调项目。  
-本项目以 **CELLxGENE Census** 为主要数据源，从候选数据集筛选、标准化导出、清洗、marker 提取、SFT 样本构造，到 **Qwen3 + LoRA** 微调与推理验证，形成了一条可复现的端到端流程。
+一个面向 **single-cell RNA-seq（scRNA-seq）细胞类型注释** 的数据构建、大模型微调与推理评估项目。
+
+本项目以 **CELLxGENE Census** 为主要数据源，搭建了一条从候选数据集筛选、标准化导出、清洗标准化、标签净化、marker 提取、SFT 数据构造、知识库构建，到 **Qwen3-4B + LoRA** 微调、知识检索增强推理与结构化评估的完整端到端流程。
 
 ---
 
 ## 项目概览
 
-本项目旨在构建一个基于大语言模型的细胞类型注释原型系统。核心思想是：
+核心思路：不把单细胞表达矩阵原样送入大模型，而是先从标准化单细胞数据中提取 **cell-type 级别的 marker gene 证据**，再构建适合语言模型学习的结构化指令样本，对 Qwen3-4B 做 LoRA 监督微调，让模型能够根据 marker gene 列表和生物学上下文输出结构化的细胞类型注释。
 
-1. 从公开单细胞数据库中筛选合适的数据集。
-2. 导出标准化的 `AnnData` 数据。
-3. 清洗细胞标签与表达矩阵。
-4. 基于人工标签提取 marker gene 样本。
-5. 将 marker 样本转换为 **Qwen3 / ms-swift 可用的 SFT 数据格式**。
-6. 使用 **Qwen3 + LoRA** 进行监督微调。
-7. 在测试样本上验证模型是否能够根据 marker gene 列表和生物学上下文输出合理的细胞类型判断。
+整个流程分为三个主要阶段：
 
-当前项目更偏向于一个 **“单细胞注释 + 大模型微调”的工程验证与研究原型**，适合后续逐步扩展数据规模、标签体系和训练策略。
+1. **数据准备与知识构建**（01–09）：从公开数据库获取数据，经过清洗、标签净化、marker 提取、SFT 数据构造，以及 ontology 资源和 marker 知识库的构建。
+2. **模型训练**：使用 Hugging Face TRL + PEFT 对 Qwen3-4B 进行 LoRA 监督微调。
+3. **推理与评估**：基于 KB 检索增强的批量推理，配合结构化字段解析和多层级生物学评估指标。
 
 ---
 
-## 项目特点
-
-- 基于 **CELLxGENE Census** 获取标准化单细胞数据。
-- 支持按候选数据集筛选并批量导出 `.h5ad`。
-- 支持单细胞标签清洗与标准化。
-- 基于 `one-vs-rest` 差异表达分析提取 marker 样本。
-- 自动构造 **Qwen3 / ms-swift** 所需的 `messages` 格式 SFT 数据。
-- 支持 **dataset-level split**，避免同一数据集泄漏到训练和测试中。
-- 使用 **Qwen3-4B + LoRA + ms-swift** 完成轻量化微调。
-- 支持本地模型目录加载，避免训练时依赖外网。
-
----
-
-## 当前流程图
+## 整体流程
 
 ```text
-01_list_candidate_datasets.py
-    ↓
-02_export_selected_datasets.py
-    ↓
-03_clean_and_standardize.py
-    ↓
-04_make_marker_examples.py
-    ↓
-05_make_sft_jsonl.py
-    ↓
-06_split_and_validate.py
-    ↓
-download_qwen3_4b_modelscope.py
-    ↓
-train_qwen3_swift.sh
-    ↓
-infer_qwen3_swift.py
+scripts/data_prep/
+  01_list_candidate_datasets.py      ← 筛选候选数据集
+  02_export_selected_datasets.py     ← 导出原始 h5ad
+  03_clean_and_standardize.py        ← 清洗与标准化
+  04_make_marker_examples.py         ← 提取 marker 样本
+  05_make_sft_jsonl.py               ← 构建 SFT 数据（v3 canonical labels）
+  06_split_and_validate_v2.py        ← dataset-level 切分
+  07_build_ontology_resources.py     ← 构建 ontology 索引
+  08_build_marker_kb.py              ← 构建 marker 知识库
+  09_purify_labels.py                ← 标签净化与 CL 标准化
+          ↓
+scripts/train/
+  run_qwen3_hf_trl.sh                ← Qwen3-4B LoRA SFT（HF TRL）
+          ↓
+scripts/infer/
+  infer_qwen3_kb_retrieval.py        ← KB 检索增强推理 + 评估
 ```
 
 ---
@@ -62,567 +45,322 @@ infer_qwen3_swift.py
 
 ```text
 singal_cell_annotation/
-├── config.py
-├── 01_list_candidate_datasets.py
-├── 02_export_selected_datasets.py
-├── 03_clean_and_standardize.py
-├── 04_make_marker_examples.py
-├── 05_make_sft_jsonl.py
-├── 06_split_and_validate.py
-├── download_qwen3_4b_modelscope.py
-├── train_qwen3_swift.sh
-├── infer_qwen3_swift.py
-├── my_models/
-│   └── Qwen3-4B/
-├── output/
-│   └── qwen3_4b_sc_sft_swift_v2/
+├── scripts/
+│   ├── data_prep/
+│   │   ├── 01_list_candidate_datasets.py
+│   │   ├── 02_export_selected_datasets.py
+│   │   ├── 03_clean_and_standardize.py
+│   │   ├── 04_make_marker_examples.py
+│   │   ├── 05_make_sft_jsonl.py
+│   │   ├── 06_split_and_validate_v2.py
+│   │   ├── 07_build_ontology_resources.py
+│   │   ├── 08_build_marker_kb.py
+│   │   ├── 09_purify_labels.py
+│   │   └── data_prep_config.py
+│   ├── train/
+│   │   ├── run_qwen3_hf_trl.sh
+│   │   ├── train_qwen3_hf_trl.py
+│   │   └── train_config.yaml
+│   ├── infer/
+│   │   └── infer_qwen3_kb_retrieval.py
+│   └── diagnosis/
+│       ├── analyze_label_noise.py
+│       ├── analyze_error_buckets.py
+│       ├── ablate_kb_retrieval.py
+│       ├── ablate_ontology_target.py
+│       ├── ablate_output_schema.py
+│       ├── generate_diagnosis_report.py
+│       └── run_all_diagnosis.py
+├── src/sca/
+│   ├── data/
+│   │   ├── curation_rules.py
+│   │   ├── split_grouping.py
+│   │   └── target_labeling.py
+│   └── diagnosis/
+│       ├── metrics.py
+│       ├── bucket_analysis.py
+│       ├── label_quality.py
+│       └── report_utils.py
 ├── data/
 │   ├── raw_h5ad/
 │   ├── clean_h5ad/
 │   ├── intermediate/
+│   ├── knowledge/
+│   │   ├── ontology_index.jsonl
+│   │   ├── cell_ontology_min.jsonl
+│   │   ├── merged_marker_kb.jsonl
+│   │   └── train_marker_kb.jsonl
 │   ├── meta/
 │   ├── sft/
 │   └── splits/
+├── resources/
+│   └── ontology/
+│       ├── label_aliases.tsv
+│       └── cell_ontology_min.jsonl
+├── my_models/
+│   └── Qwen/
+│       └── Qwen3-4B/
+├── output/
+│   └── <训练输出目录>/
 └── README.md
 ```
-
-### 目录说明
-
-- `raw_h5ad/`：从 Census 导出的原始标准化 `.h5ad`
-- `clean_h5ad/`：清洗后的 `.h5ad`
-- `intermediate/`：中间结果，如 `marker_examples.jsonl`
-- `meta/`：各步骤 manifest、summary、log 等元数据
-- `sft/`：构造好的 SFT 样本
-- `splits/`：划分后的 `train / val / test` 数据
-- `my_models/`：本地缓存的基础模型目录
-- `output/`：训练输出目录、checkpoint、日志、曲线图等
 
 ---
 
 ## 1. 环境依赖
 
-建议使用 conda 创建独立环境，例如：
+建议使用独立 conda 环境：
 
 ```bash
 conda create -n shuke_SCA python=3.10 -y
 conda activate shuke_SCA
 ```
 
-安装核心依赖：
+安装数据处理依赖：
 
 ```bash
 pip install cellxgene-census anndata scanpy pandas numpy tqdm
-pip install transformers peft trl
-pip install modelscope
-pip install ms-swift
 ```
 
-如果使用 GPU 训练，还需要根据 CUDA 环境安装对应版本的 PyTorch。
+安装模型训练与推理依赖：
+
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cu121   # 按 CUDA 版本调整
+pip install transformers peft trl accelerate
+pip install modelscope
+pip install bitsandbytes   # 可选，仅 8B QLoRA 时需要
+```
 
 ---
 
 ## 2. 数据源与模型
 
-### 数据源
-
-- **CELLxGENE Census**
-- 导出方式：`cellxgene_census.get_anndata(...)`
-- 导出对象：标准化 `AnnData`
-
-### 基础模型
-
-- **Qwen3-4B**
-- 下载方式：**ModelScope**
-- 微调方式：**LoRA**
-- 训练框架：**ms-swift**
+- **数据源**：CELLxGENE Census，通过 `cellxgene_census.get_anndata()` 获取标准化 AnnData
+- **基础模型**：Qwen3-4B，通过 ModelScope 下载，保存到 `my_models/Qwen/Qwen3-4B/`
+- **微调方式**：LoRA（all-linear），使用 HF TRL `SFTTrainer`
+- **推理**：本地 base model + LoRA adapter，配合 marker 知识库 Jaccard 检索增强
 
 ---
 
-## 3. 整体流程
+## 3. 配置说明
 
-### Step 1. 候选数据集筛选
+### 数据准备配置
 
-**脚本：** `01_list_candidate_datasets.py`
+```text
+scripts/data_prep/data_prep_config.py
+```
 
-**作用：**
+统一管理 01–09 的路径、筛选阈值、清洗参数、marker 提取参数、SFT 构造参数等。
 
-- 查询 Census 中指定组织的候选 dataset
-- 统计每个 dataset 的：
-  - `cell_count`
-  - `unique_cell_types`
-  - `tissues`
-  - `diseases`
+### 训练配置
 
-**输出：**
+```text
+scripts/train/train_config.yaml
+```
 
-- `candidate_datasets.csv`
-- `selected_datasets.csv`
+所有训练超参数均在此文件中配置，无需修改训练脚本即可调整。主要配置项：
 
-**说明：**
+```yaml
+model_size: "4B"              # "4B"（全精度 LoRA）或 "8B"（QLoRA）
+train_file: "data/splits/train_messages_no_think_v3.jsonl"
+val_file:   "data/splits/val_messages_no_think_v3.jsonl"
+output_dir: ""                # 留空则自动生成带时间戳的目录名
 
-`selected_datasets.csv` 需要人工筛选，将想保留的数据集设置为 `use=1`。
+num_train_epochs: 10
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 8
+learning_rate: 2.0e-5
+lora_r: 16
+lora_alpha: 32
+max_length: 1536
+```
 
-建议优先保留：
+---
 
-- `cell_count` 适中
-- `unique_cell_types` 较丰富
-- `tissues` 相对单一
-- `disease` 不过于混杂
-- 标题看起来不是过于复杂的大型整合分析
+## 4. 数据准备流程（01–09）
 
-**运行：**
+### Step 1 — 候选数据集筛选
 
 ```bash
-python -u 01_list_candidate_datasets.py 2>&1 | tee data/meta/01_list_candidate_datasets.log
+python -u scripts/data_prep/01_list_candidate_datasets.py \
+  2>&1 | tee data/meta/01_list_candidate_datasets.log
 ```
 
-### Step 2. 导出标准化 h5ad
+从 Census 按目标组织查询候选 dataset，统计 cell_count、unique_cell_types、tissues、diseases，按配置阈值过滤后输出 `candidate_datasets.csv` 和 `selected_datasets.csv`。
 
-**脚本：** `02_export_selected_datasets.py`
-
-**作用：**
-
-- 读取 `selected_datasets.csv`
-- 导出 `use=1` 的数据集为标准化 `.h5ad`
-
-**特点：**
-
-- 支持跳过已存在文件
-- 支持失败重试
-- 自动生成导出 manifest
-
-**输出：**
-
-- `data/raw_h5ad/*.h5ad`
-- `raw_export_manifest.csv`
-
-**运行：**
+### Step 2 — 导出原始 h5ad
 
 ```bash
-python -u 02_export_selected_datasets.py 2>&1 | tee data/meta/02_export_selected_datasets.log
+python -u scripts/data_prep/02_export_selected_datasets.py \
+  2>&1 | tee data/meta/02_export_selected_datasets.log
 ```
 
-### Step 3. 清洗与标准化
+读取 `selected_datasets.csv`，导出 `use=1` 的数据集为 `.h5ad`，支持断点续跑和失败重试。
 
-**脚本：** `03_clean_and_standardize.py`
-
-**作用：**
-
-- 读取 raw `.h5ad`
-- 清洗标签与元数据
-- 去除无效 `cell type`
-- 去除 `ambiguous / unknown / doublet` 等标签
-- 过滤低频基因
-- 过滤样本数过少的标签
-- 输出 cleaned `.h5ad`
-
-**输出：**
-
-- `data/clean_h5ad/*.h5ad`
-- `clean_manifest.csv`
-
-**说明：**
-
-这里的目标不是做“最严格的生物质控”，而是先构建适合训练的大模型监督样本。当前实现更偏向训练导向的标签清洗。
-
-**运行：**
+### Step 3 — 清洗与标准化
 
 ```bash
-python -u 03_clean_and_standardize.py 2>&1 | tee data/meta/03_clean_and_standardize.log
+python -u scripts/data_prep/03_clean_and_standardize.py \
+  2>&1 | tee data/meta/03_clean_and_standardize.log
 ```
 
-### Step 4. Marker 样本构造
+统一基因名与 obs 字段，过滤 unknown/ambiguous/doublet 等标签，加入 ontology 相关字段（`cell_ontology_id`、`cell_type_status`、`cell_type_level`），输出训练导向的 clean h5ad。
 
-**脚本：** `04_make_marker_examples.py`
-
-**作用：**
-
-- 基于 `cell_type_clean` 进行 `one-vs-rest` 差异分析
-- 为每个 `cell type` 提取 `top-k marker genes`
-- 构造 marker example
-
-**输出：**
-
-- `data/intermediate/marker_examples.jsonl`
-- `marker_examples_manifest.csv`
-- `04_make_marker_examples_run_summary.txt`
-
-**说明：**
-
-这里的样本单位不是“单个细胞”，而是“一个 `cell type` 的 marker 记录”。
-
-`Total marker examples` 的含义是：可用于训练的 marker 样本数，而不是细胞数。
-
-**运行：**
+### Step 4 — marker 样本提取
 
 ```bash
-python -u 04_make_marker_examples.py 2>&1 | tee data/meta/04_make_marker_examples.log
+python -u scripts/data_prep/04_make_marker_examples.py \
+  2>&1 | tee data/meta/04_make_marker_examples.log
 ```
 
-### Step 5. 构造 SFT 数据
+基于 `one-vs-rest` 差异表达分析，为每个 cell type 提取 top positive markers，构造 marker-level 样本记录（一条样本 = 一个 cell type 的 marker 证据，不是单个细胞）。
 
-**脚本：** `05_make_sft_jsonl.py`
-
-**作用：**
-
-- 将 marker 样本转换为 Qwen3 / ms-swift 可用的 `messages` 格式
-- 同时输出普通版与 `no-think` 兼容版
-
-**输出：**
-
-- `sft_records_full.jsonl`
-- `sft_messages.jsonl`
-- `sft_messages_no_think.jsonl`
-
-**说明：**
-
-- `system` 来自 `config.py` 中的 `SYSTEM_PROMPT`
-- `user` 由 `build_user_prompt(...)` 构造
-- `assistant` 由 `build_assistant_answer(...)` 构造
-
-**运行：**
+### Step 5 — 构建 SFT 数据
 
 ```bash
-python -u 05_make_sft_jsonl.py 2>&1 | tee data/meta/05_make_sft_jsonl.log
+python -u scripts/data_prep/05_make_sft_jsonl.py \
+  2>&1 | tee data/meta/05_make_sft_jsonl.log
 ```
 
-### Step 6. 数据划分
+将 marker 记录包装成 Qwen3 可训练的 `messages` 格式。当前使用 **v3 builder**，assistant 端的 `cell_type` 和 `cell_ontology_id` 直接来自 marker 记录中的 canonical CL 标准标签，不经过 LLM 生成（避免标签噪声）。同时输出标准版和 no-think 兼容版。
 
-**脚本：** `06_split_and_validate.py`
-
-**作用：**
-
-- 按 `dataset_id` 级别划分 `train / val / test`
-- 保证不同 split 之间无 dataset 泄漏
-- 输出 split summary
-
-**输出：**
-
-- `train_messages*.jsonl`
-- `val_messages*.jsonl`
-- `test_messages*.jsonl`
-
-**说明：**
-
-当前实现采用 `dataset-level global split`。  
-不再按记录级 tissue 分层，避免多组织 dataset 导致同一 `dataset_id` 重复分配。  
-这一步的重点是控制 dataset 泄漏，而不是追求复杂分层抽样。
-
-**运行：**
+### Step 6 — dataset-level 切分
 
 ```bash
-python -u 06_split_and_validate.py 2>&1 | tee data/meta/06_split_and_validate.log
+python -u scripts/data_prep/06_split_and_validate_v2.py \
+  2>&1 | tee data/meta/06_split_and_validate_v2.log
 ```
 
-### Step 7. 下载基础模型
+按 `dataset_id` 级别切分 train/val/test，避免同一 dataset 同时出现在训练和测试中。同时为 v3 数据生成对应的 split 文件。
 
-**脚本：** `download_qwen3_4b_modelscope.py`
-
-**作用：**
-
-- 从 ModelScope 下载 `Qwen/Qwen3-4B`
-- 保存到本地目录 `my_models/`
-
-**运行：**
+### Step 7 — 构建 ontology 资源
 
 ```bash
-python download_qwen3_4b_modelscope.py
+python -u scripts/data_prep/07_build_ontology_resources.py \
+  2>&1 | tee data/meta/07_build_ontology_resources.log
 ```
 
-### Step 8. LoRA 微调
+基于 `label_aliases.tsv` 构建本地 ontology 索引，输出 `data/knowledge/ontology_index.jsonl` 和 `cell_ontology_min.jsonl`，供运行时标签标准化和 ID 查找使用。
 
-**脚本：** `train_qwen3_swift.sh`
-
-**作用：**
-
-使用 `ms-swift` 对 `Qwen3-4B` 做 LoRA SFT。
-
-**当前版本特点：**
-
-- 使用 `train_messages_no_think.jsonl`
-- 支持 `val_messages_no_think.jsonl`
-- 使用 `ignore_empty_think`
-- 使用 LoRA 训练
-- 保存 checkpoint 与训练日志
-
-**运行：**
+### Step 8 — 构建 marker 知识库
 
 ```bash
-bash train_qwen3_swift.sh 2>&1 | tee data/meta/train_qwen3_swift.log
+python -u scripts/data_prep/08_build_marker_kb.py \
+  2>&1 | tee data/meta/08_build_marker_kb.log
 ```
 
-### Step 9. 推理验证
+将外部 marker 知识与训练数据提炼的 marker 合并，构建统一 marker KB（`merged_marker_kb.jsonl` 和 `train_marker_kb.jsonl`），供推理时 Jaccard 相似度检索使用。
 
-**脚本：** `infer_qwen3_swift.py`
-
-**作用：**
-
-- 加载基础模型 + LoRA adapter
-- 读取测试样本
-- 进行推理生成
-- 检查模型是否学会任务格式与细胞类型判断
-
-**运行：**
+### Step 9 — 标签净化
 
 ```bash
-python infer_qwen3_swift.py 2>&1 | tee data/meta/infer_qwen3_swift.log
+python -u scripts/data_prep/09_purify_labels.py \
+  2>&1 | tee data/meta/09_purify_labels_run_summary.txt
 ```
+
+对 marker 记录中的 cell_type 标签进行 CL 标准名对齐，修复错误映射，过滤恶性/异常细胞标签，同步扩展 `label_aliases.tsv`。净化后重新运行 04→06 更新训练数据。
+
+**当前数据规模**：~1341 条训练样本，来自 10+ 个数据集，覆盖血液、肺、肝脏、肠道等组织。
 
 ---
 
-## 4. 快速开始
-
-如果你已经完成环境安装，并准备从头跑完整流程，推荐顺序如下：
+## 5. 训练
 
 ```bash
-python -u 01_list_candidate_datasets.py 2>&1 | tee data/meta/01_list_candidate_datasets.log
-# 手动编辑 selected_datasets.csv，设置 use=1
-
-python -u 02_export_selected_datasets.py 2>&1 | tee data/meta/02_export_selected_datasets.log
-python -u 03_clean_and_standardize.py 2>&1 | tee data/meta/03_clean_and_standardize.log
-python -u 04_make_marker_examples.py 2>&1 | tee data/meta/04_make_marker_examples.log
-python -u 05_make_sft_jsonl.py 2>&1 | tee data/meta/05_make_sft_jsonl.log
-python -u 06_split_and_validate.py 2>&1 | tee data/meta/06_split_and_validate.log
-
-python download_qwen3_4b_modelscope.py
-bash train_qwen3_swift.sh 2>&1 | tee data/meta/train_qwen3_swift.log
-python infer_qwen3_swift.py 2>&1 | tee data/meta/infer_qwen3_swift.log
+cd /data/projects/shuke/code/singal_cell_annotation
+nohup bash scripts/train/run_qwen3_hf_trl.sh > nohup_train.log 2>&1 &
 ```
 
+训练脚本读取 `train_config.yaml` 中的所有配置，使用 HF TRL `SFTTrainer` 训练，保存 LoRA adapter 到 `output_dir`（可自动生成带时间戳的目录）。
+
+**当前推荐配置（4B）**：bf16 全精度 LoRA，显存约 14GB，适合单张 24GB GPU。
+
 ---
 
-## 5. 配置说明
+## 6. 推理与评估
 
-项目主要配置集中在 `config.py` 中，常见配置包括：
-
-- Census 版本
-- 目标组织列表
-- 数据目录路径
-- 候选数据集过滤阈值
-- 标签清洗关键词
-- marker 数量与过滤条件
-- SFT 输出路径
-- split 输出目录
-- 系统提示词 `SYSTEM_PROMPT`
-
-### 典型配置项
-
-```python
-CENSUS_VERSION = "2025-11-08"
-ORGANISM = "Homo sapiens"
-
-MIN_DATASET_CELLS = ...
-MAX_DATASET_CELLS = ...
-MIN_UNIQUE_CELL_TYPES = ...
-MIN_CELLS_PER_LABEL = ...
-MIN_GENES_DETECTED_IN_CELLS = ...
-
-SYSTEM_PROMPT = "You are a transcriptomics assistant ..."
+```bash
+nohup python -u scripts/infer/infer_qwen3_kb_retrieval.py \
+  --model_dir my_models/Qwen/Qwen3-4B \
+  --adapter_dir output/<训练输出目录> \
+  --test_file data/splits/test_messages_no_think_v3.jsonl \
+  --kb_file data/knowledge/merged_marker_kb.jsonl \
+  --output_dir output/<推理输出目录> \
+  > nohup_infer.log 2>&1 &
 ```
 
----
+推理脚本在生成前先用 Jaccard 相似度从 marker KB 中检索相关条目，注入到 prompt 中（KB 检索增强）。推理完成后自动解析 JSON 输出，计算多层级评估指标。
 
-## 6. 方法设计说明
+### 评估指标
 
-### 6.1 为什么优先使用 Census 标准化数据
+| 指标 | 含义 |
+|------|------|
+| `cell_type_exact_accuracy` | 严格字符串匹配 |
+| `ontology_compatible_accuracy` | 包含 ontology 兼容匹配（父子关系） |
+| `cell_type_same_lineage_rate` | 预测与 gold 在同一大谱系 |
+| `cell_type_severe_error_rate` | 跨谱系严重错误率 |
+| `cell_ontology_id_accuracy` | CL ID 准确率 |
+| `parse_ok_rate` | JSON 解析成功率 |
 
-不同投稿者的原始 `.h5ad` 往往存在以下问题：
+### v3 模型当前结果（n=215）
 
-- 字段命名不一致
-- 数据结构差异较大
-- 工程处理成本更高
-
-因此，本项目优先使用 Census 标准化切片，以降低后续清洗与训练管线的复杂度。
-
-### 6.2 为什么需要再次清洗标签
-
-虽然 Census 已经做了标准化，但直接用于训练仍可能存在：
-
-- 缺失标签
-- `ambiguous` 标签
-- `doublet / unknown` 类标签
-- 标签大小写与文本不统一
-- 长尾极小标签
-
-因此需要进行训练导向的再次清洗。
-
-### 6.3 为什么样本单位是 marker record 而不是单细胞
-
-本项目当前的训练目标是：
-
-> 给定 marker gene 列表和上下文，让模型输出最可能的 cell type。
-
-因此更适合使用“一个 `cell type` 的 marker gene 记录”作为一条监督样本，而不是直接把单细胞表达矩阵原样送入大模型。
-
-### 6.4 为什么按 dataset_id 划分
-
-如果随机按样本切分，会导致：
-
-- 同一个 dataset 的样本同时出现在 `train` 和 `test` 中
-- 模型可能记住 dataset 特征，造成评估泄漏
-
-因此当前采用 `dataset-level split`。
-
-### 6.5 为什么使用 no-think 版本数据
-
-当前项目使用 Qwen3，采用了兼容 `no-think` 的 SFT 样本格式：
-
-- `user` 末尾添加 `/no_think`
-- `assistant` 保留空 `<think></think>`
-- 训练时配合 `ignore_empty_think`
-
-这样更适合当前 Qwen3 的训练与推理方式。
+| 指标 | 数值 |
+|------|------|
+| exact accuracy | 26.5% |
+| ontology_compatible | 39.1% |
+| same_lineage | 64.2% |
+| severe_error | 35.8% |
+| ontology_id accuracy | 43.9%（n=180） |
 
 ---
 
-## 7. 当前项目状态
+## 7. 诊断工具
 
-目前项目已经完成以下验证：
+`scripts/diagnosis/` 提供了一套系统化诊断脚本，用于定位模型性能瓶颈：
 
-- 候选数据集筛选流程已跑通
-- Census 标准化导出流程已跑通
-- cleaned `.h5ad` 构造已跑通
-- marker 样本提取已跑通
-- Qwen3 / ms-swift SFT 数据构造已跑通
-- dataset-level split 已跑通
-- Qwen3-4B + LoRA + ms-swift 训练已成功启动并完成验证
-- 推理脚本已成功加载基础模型与 LoRA adapter，并输出结构化 JSON
+```bash
+# 运行全套诊断
+python scripts/diagnosis/run_all_diagnosis.py
 
-这说明整个工程链路已经打通。
+# 单独运行各诊断模块
+python scripts/diagnosis/analyze_label_noise.py      # 训练标签噪声分析
+python scripts/diagnosis/analyze_error_buckets.py    # 错误分桶分析
+python scripts/diagnosis/ablate_kb_retrieval.py      # KB 消融（with/without KB）
+python scripts/diagnosis/ablate_ontology_target.py   # Ontology 目标消融
+python scripts/diagnosis/generate_diagnosis_report.py  # 生成汇总报告
+```
 
----
-
-## 8. 当前局限性
-
-当前版本仍存在以下局限：
-
-1. **数据集数量仍偏少**  
-   虽然比初始版本有所扩充，但训练样本规模仍较小。
-
-2. **dataset 之间异质性较强**  
-   部分数据集跨多个组织或疾病背景，增加了样本复杂度。
-
-3. **标签统一仍较粗糙**  
-   当前只做了基础 label normalization，尚未构建系统性的 ontology-level label mapping。
-
-4. **训练样本形式较单一**  
-   当前只使用 marker record，尚未引入：
-   - `cluster summary`
-   - differential expression statistics
-   - 多轮问答
-   - hard negative 样本
-
-5. **评估仍偏工程验证**  
-   当前更适合验证链路与初步效果，尚不足以形成最终实验结论。
+**主要诊断结论**：
+- 训练数据标签噪声率：33.7%
+- KB 检索对 exact accuracy 的贡献：+21.7pp
+- v3 canonical labels 对 ontology_id accuracy 的提升：+42.8pp（vs v2 的 1.1%）
 
 ---
 
-## 9. 后续优化方向
+## 8. 方法设计说明
 
-### 数据层
+**为什么按 dataset_id 切分**：同一个 dataset 往往生成多条 marker 样本，按记录随机切分会导致测试集泄漏，dataset-level split 能保证评测更真实。
 
-- 增加更多单组织、标签清晰的数据集
-- 引入更多正常组织与疾病组织
-- 提升数据集多样性与代表性
+**为什么样本单位是 marker record 而不是单细胞**：任务目标是"根据 marker gene 列表推断 cell type"，使用 cell-type 级别的 marker 汇总记录比单细胞表达向量更贴近实际注释思路，也适合语言模型的输入形式。
 
-### 标签层
+**为什么 v3 不使用 LLM 生成标签**：早期版本（v2）用 LLM 生成 assistant 端的 cell_type 和 cell_ontology_id，导致标签噪声累积（量化为 33.7%），且 CL ID 普遍错误（v2 的 ontology_id_accuracy 仅 1.1%）。v3 直接从 marker 记录的 canonical 字段读取，从根本上消除这一问题。
 
-- 构建统一 label dictionary
-- 做 ontology-level 对齐
-- 规范同义标签、层级标签和细分类标签
-
-### 样本层
-
-- 增加更多 marker 样本
-- 构造 harder examples
-- 引入 manual review 标签
-- 构造多种 prompt 风格
-
-### 训练层
-
-- 增加 `train / val / test` dataset 数量
-- 引入更稳健的验证集
-- 比较不同 `epoch / lr / LoRA rank`
-- 尝试更大模型（如 `Qwen3-8B`）
-
-### 评估层
-
-- 构建标准 benchmark
-- 对比 `zero-shot / few-shot / SFT`
-- 评估 JSON 结构正确率、cell type 准确率、marker 解释合理性
+**为什么使用 no-think 训练数据**：当前训练和推理均使用 Qwen3 no-think 模式（user 末尾 `/no_think`，assistant 含空 `<think></think>`），在注释任务中不需要 chain-of-thought 推理，no-think 输出更简洁稳定。
 
 ---
 
-## 10. 常见问题
+## 9. 当前局限性
 
-### Q1. `04_make_marker_examples` 输出的 `Total marker examples` 是不是细胞数？
-
-不是。  
-它表示 marker 样本数 / cell-type 记录数，不是单细胞数。
-
-### Q2. 为什么 `06_split_and_validate` 不能按记录级 tissue 分层？
-
-因为一个 dataset 可能跨多个 tissue。  
-如果按记录级 tissue 分层，同一个 `dataset_id` 可能被重复分到多个 split，导致 overlap。
-
-### Q3. 为什么训练时优先使用 `train_messages_no_think.jsonl`？
-
-因为当前使用的是 Qwen3，项目采用了兼容 `no-think` 的 SFT 样本格式：
-
-- `user` 末尾添加 `/no_think`
-- `assistant` 保留空 `<think></think>`
-- 训练时配合 `ignore_empty_think`
-
-### Q4. 为什么 `swift --help` 报错，但 `swift sft --help` 正常？
-
-因为当前安装版本的 `swift` 顶层 CLI 对 `--help` 处理不完整，但 `swift sft` 子命令正常，不影响训练。
-
-### Q5. 为什么推理时要加载 checkpoint 目录而不是训练输出根目录？
-
-因为 `PeftModel.from_pretrained(...)` 需要找到：
-
-- `adapter_config.json`
-- `adapter_model.safetensors`
-
-这些通常位于具体的 checkpoint 目录中，而不是训练输出根目录。
+1. **训练样本规模偏小**：约 1341 条，覆盖细胞类型有限，泛化能力受制于数据多样性。
+2. **文字版任务的竞争压力**：基于 marker gene list 的文字推理任务，大型通用 LLM 也能处理，小模型的优势主要在本地部署和隐私场景。
+3. **标签噪声仍然存在**：即使经过 09_purify_labels 净化，部分长尾细胞类型的标签仍难以完全对齐 CL 标准。
+4. **推理评估仍为半自动**：severe_error 判断基于谱系规则，不能完全替代生物学专家审核。
 
 ---
 
-## 11. 结果与观察
+## 10. 致谢
 
-当前阶段的主要结论包括：
-
-- 使用少量数据时，模型可以较快学会任务输出格式
-- 增加 dataset 数量后，marker 样本数明显增加，训练效果优于极小样本版本
-- 当前模型已经能够在部分测试样本上输出较合理的细胞类型与 supporting markers
-- 但在更复杂样本上，仍然可能受到数据规模和标签体系限制
-
-因此，当前结果更适合作为**工程原型验证**，后续仍需扩充数据并优化标签与评估体系。
-
----
-
-## 12. 致谢
-
-本项目的数据获取依赖于：
-
-- CELLxGENE Census
-- 相关公开单细胞数据集提供者
-
-模型与训练框架依赖于：
-
-- Qwen
-- ModelScope
-- Hugging Face Transformers
-- PEFT
-- ms-swift
-
----
-
-## 13. License
-
-当前项目主要用于研究与实验验证。  
-若涉及公开发布，请根据以下内容进一步补充具体 license 信息：
-
-- Census 数据使用协议
-- 各原始数据集使用条款
-- Qwen 模型许可证
+- [CELLxGENE Census](https://chanzuckerberg.github.io/cellxgene-census/)
+- [Qwen](https://github.com/QwenLM/Qwen3) / ModelScope
+- [Hugging Face Transformers](https://github.com/huggingface/transformers) / PEFT / TRL
+- 各公开单细胞数据集贡献者
