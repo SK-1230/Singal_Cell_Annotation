@@ -137,3 +137,154 @@ stromal cell	stromal cell	CL:0000499	somatic cell	canonical
 stromal cells	stromal cell	CL:0000499	somatic cell	plural alias
 adipocyte	adipocyte	CL:0000136	stromal cell	canonical
 adipocytes	adipocyte	CL:0000136	stromal cell	plural alias
+gamma-delta t cell	gamma-delta t cell	CL:0000798	t cell	auto from 09_purify_labels
+cd4-positive, alpha-beta t cell	cd4-positive, alpha-beta t cell	CL:0000624	t cell	auto from 09_purify_labels
+cd8-positive, alpha-beta t cell	cd8-positive, alpha-beta t cell	CL:0000625	t cell	auto from 09_purify_labels
+naive thymus-derived cd4-positive, alpha-beta t cell	naive thymus-derived cd4-positive, alpha-beta t cell	CL:0000895	cd4-positive, alpha-beta t cell	auto from 09_purify_labels
+naive thymus-derived cd8-positive, alpha-beta t cell	naive thymus-derived cd8-positive, alpha-beta t cell	CL:0000900	cd8-positive, alpha-beta t cell	auto from 09_purify_labels
+cd4-positive, alpha-beta memory t cell	cd4-positive, alpha-beta memory t cell	CL:0000897	cd4-positive, alpha-beta t cell	auto from 09_purify_labels
+cd8-positive, alpha-beta memory t cell	cd8-positive, alpha-beta memory t cell	CL:0000909	cd8-positive, alpha-beta t cell	auto from 09_purify_labels
+central memory cd4-positive, alpha-beta t cell	central memory cd4-positive, alpha-beta t cell	CL:0000904	cd4-positive, alpha-beta t cell	auto from 09_purify_labels
+effector memory cd4-positive, alpha-beta t cell	effector memory cd4-positive, alpha-beta t cell	CL:0000906	cd4-positive, alpha-beta t cell	auto from 09_purify_labels
+effector memory cd8-positive, alpha-beta t cell	effector memory cd8-positive, alpha-beta t cell	CL:0000913	cd8-positive, alpha-beta t cell	auto from 09_purify_labels
+effector memory cd8-positive, alpha-beta t cell, terminally differentiated	terminally differentiated effector memory cd8-positive, alpha-beta t cell	CL:0001062	effector memory cd8-positive, alpha-beta t cell	auto from 09_purify_labels
+effector cd4-positive, alpha-beta t cell	effector cd4-positive, alpha-beta t cell	CL:0001044	cd4-positive, alpha-beta t cell	auto from 09_purify_labels
+effector cd8-positive, alpha-beta t cell	effector cd8-positive, alpha-beta t cell	CL:0001050	cd8-positive, alpha-beta t cell	auto from 09_purify_labels
+activated cd4-positive, alpha-beta t cell	activated cd4-positive, alpha-beta t cell	CL:0000896	cd4-positive, alpha-beta t cell	auto from 09_purify_labels
+activated cd8-positive, alpha-beta t cell	activated cd8-positive, alpha-beta t cell	CL:0000906	cd8-positive, alpha-beta t cell	auto from 09_purify_labels
+activated cd4-positive, alpha-beta t cell, human	activated cd4-positive, alpha-beta t cell	CL:0000896	cd4-positive, alpha-beta t cell	auto from 09_purify_labels
+mucosal invariant t cell	mucosal invariant t cell	CL:0000940	t cell	auto from 09_purify_labels
+cd4-positive, cd25-positive, alpha-beta regulatory t cell	cd4-positive, cd25-positive, alpha-beta regulatory t cell	CL:0000792	regulatory t cell	auto from 09_purify_labels
+lung resident memory cd8-positive, alpha-beta t cell	tissue-resident memory t cell	CL:0002103	cd8-positive, alpha-beta t cell	auto from 09_purify_labels
+double negative thymocyte	double negative thymocyte	CL:0002489	thymocyte	auto from 09_purify_labels
+double-positive, alpha-beta thymocyte	double-positive, alpha-beta thymocyte	CL:0000809	thymocyte	auto from 09_purify_labels
+type i nk t cell	type i nk t cell	CL:0000922	nk t cell	auto from 09_purify_labels
+mature nk t cell	mature nk t cell	CL:0000815	nk t cell	auto from 09_purify_labels
+cd16-negative, cd56-bright natural killer cell, human	cd56-bright natural killer cell	CL:0000938	natural killer cell	auto from 09_purify_labels
+cd16-positive, cd56-dim natural killer cell, human	cd56-dim natural killer cell	CL:0000939	natural killer cell	auto from 09_purify_labels
+decidual natural killer cell, human	decidual natural killer cell	CL:0002001	natural killer cell	auto from 09_purify_labels
+mature b cell	mature b cell	CL:0000785	b cell	auto from 09_purify_labels
+immature b cell	immature b cell	CL:0000816	b cell	auto from 09_purify_labels
+transitional stage b cell	transitional stage b cell	CL:0000818	immature b cell	auto from 09_purify_labels
+early pro-b cell	early pro-b cell	CL:0000826	pro-b cell	auto from 09_purify_labels
+precursor b cell	precursor b cell	CL:0000817	b cell	auto from 09_purify_labels
+pro-b cell	pro-b cell	CL:0000826	b cell	auto from 09_purify_labels
+plasmacytoid dendritic cell, human	plasmacytoid dendritic cell	CL:0000784	dendritic cell	auto from 09_purify_labels
+cd14-positive monocyte	cd14-positive monocyte	CL:0002057	monocyte	auto from 09_purify_labels
+cd14-low, cd16-positive monocyte	cd14-low, cd16-positive monocyte	CL:0002397	monocyte	auto from 09_purify_labels
+cd14-positive, cd16-negative classical monocyte	classical monocyte	CL:0000860	monocyte	auto from 09_purify_labels
+cd14-positive, cd16-positive monocyte	cd14-positive, cd16-positive monocyte	CL:0002396	monocyte	auto from 09_purify_labels
+intermediate monocyte	intermediate monocyte	CL:0002396	monocyte	auto from 09_purify_labels
+mononuclear phagocyte	mononuclear phagocyte	CL:0000113	phagocyte	auto from 09_purify_labels
+inflammatory macrophage	classically activated macrophage	CL:0000863	macrophage	auto from 09_purify_labels
+alternatively activated macrophage	alternatively activated macrophage	CL:0000890	macrophage	auto from 09_purify_labels
+kidney interstitial alternatively activated macrophage	alternatively activated macrophage	CL:0000890	macrophage	auto from 09_purify_labels
+meningeal macrophage	meningeal macrophage	CL:0002428	macrophage	auto from 09_purify_labels
+myeloid leukocyte	myeloid leukocyte	CL:0000766	leukocyte	auto from 09_purify_labels
+cycling myeloid cell	myeloid cell	CL:0000763	leukocyte	auto from 09_purify_labels
+granulocyte	granulocyte	CL:0000094	leukocyte	auto from 09_purify_labels
+immature neutrophil	immature neutrophil	CL:0000763	granulocyte	auto from 09_purify_labels
+granulocyte monocyte progenitor cell	granulocyte monocyte progenitor cell	CL:0000557	hematopoietic progenitor cell	auto from 09_purify_labels
+liver dendritic cell	conventional dendritic cell	CL:0000990	dendritic cell	auto from 09_purify_labels
+dendritic cell, human	dendritic cell	CL:0000451	leukocyte	auto from 09_purify_labels
+hematopoietic precursor cell	hematopoietic precursor cell	CL:0000037	hematopoietic cell	auto from 09_purify_labels
+hematopoietic multipotent progenitor cell	hematopoietic multipotent progenitor cell	CL:0000837	hematopoietic progenitor cell	auto from 09_purify_labels
+common lymphoid progenitor	common lymphoid progenitor	CL:0000051	hematopoietic progenitor cell	auto from 09_purify_labels
+common dendritic progenitor	common dendritic progenitor	CL:0001009	hematopoietic progenitor cell	auto from 09_purify_labels
+megakaryocyte-erythroid progenitor cell	megakaryocyte-erythroid progenitor cell	CL:0000050	hematopoietic progenitor cell	auto from 09_purify_labels
+erythroid progenitor cell	erythroid progenitor cell	CL:0000038	hematopoietic progenitor cell	auto from 09_purify_labels
+erythroid lineage cell	erythroid lineage cell	CL:0000764	hematopoietic cell	auto from 09_purify_labels
+lymphoid lineage restricted progenitor cell	lymphoid lineage restricted progenitor cell	CL:0000838	hematopoietic progenitor cell	auto from 09_purify_labels
+myeloid lineage restricted progenitor cell	myeloid lineage restricted progenitor cell	CL:0000839	hematopoietic progenitor cell	auto from 09_purify_labels
+proerythroblast	proerythroblast	CL:0000547	erythroid progenitor cell	auto from 09_purify_labels
+erythroblast	erythroblast	CL:0000765	erythroid lineage cell	auto from 09_purify_labels
+cycling plasma cell	plasmablast	CL:0000946	b cell	auto from 09_purify_labels
+endothelial cell of hepatic sinusoid	liver sinusoidal endothelial cell	CL:0000091	endothelial cell	auto from 09_purify_labels
+endothelial cell of pericentral hepatic sinusoid	liver sinusoidal endothelial cell	CL:0000091	endothelial cell	auto from 09_purify_labels
+endothelial cell of periportal hepatic sinusoid	liver sinusoidal endothelial cell	CL:0000091	endothelial cell	auto from 09_purify_labels
+centrilobular region hepatocyte	hepatocyte	CL:0000182	hepatic cell	auto from 09_purify_labels
+midzonal region hepatocyte	hepatocyte	CL:0000182	hepatic cell	auto from 09_purify_labels
+periportal region hepatocyte	hepatocyte	CL:0000182	hepatic cell	auto from 09_purify_labels
+intrahepatic cholangiocyte	intrahepatic cholangiocyte	CL:1000488	epithelial cell	auto from 09_purify_labels
+hepatic pit cell	hepatic stellate cell	CL:0000632	stromal cell	auto from 09_purify_labels
+fibroblast of lung	lung fibroblast	CL:0002503	fibroblast	auto from 09_purify_labels
+pulmonary alveolar type 1 cell	type i pneumocyte	CL:0002062	epithelial cell of lung	auto from 09_purify_labels
+pulmonary alveolar type 2 cell	type ii pneumocyte	CL:0002063	epithelial cell of lung	auto from 09_purify_labels
+lung multiciliated epithelial cell	ciliated columnar cell of the tracheobronchial tree	CL:0002145	epithelial cell of lung	auto from 09_purify_labels
+multiciliated columnar cell of tracheobronchial tree	ciliated columnar cell of the tracheobronchial tree	CL:0002145	epithelial cell of lung	auto from 09_purify_labels
+pulmonary capillary endothelial cell	lung microvascular endothelial cell	CL:0002144	endothelial cell	auto from 09_purify_labels
+lung microvascular endothelial cell	lung microvascular endothelial cell	CL:0002144	endothelial cell	auto from 09_purify_labels
+lung endothelial cell	lung endothelial cell	CL:0002144	endothelial cell	auto from 09_purify_labels
+pulmonary artery endothelial cell	pulmonary artery endothelial cell	CL:1001567	endothelial cell	auto from 09_purify_labels
+lung macrophage	alveolar macrophage	CL:0000583	macrophage	auto from 09_purify_labels
+lung goblet cell	goblet cell	CL:0000160	epithelial cell of lung	auto from 09_purify_labels
+lung pericyte	pericyte cell	CL:0000669	stromal cell	auto from 09_purify_labels
+epithelial cell of lung	epithelial cell of lung	CL:0002632	epithelial cell	auto from 09_purify_labels
+respiratory basal cell	basal cell of respiratory epithelium	CL:0002633	epithelial cell of lung	auto from 09_purify_labels
+respiratory tract goblet cell	respiratory tract goblet cell	CL:0002370	goblet cell	auto from 09_purify_labels
+respiratory tract suprabasal cell	basal cell of respiratory epithelium	CL:0002633	epithelial cell of lung	auto from 09_purify_labels
+pulmonary neuroendocrine cell	pulmonary neuroendocrine cell	CL:0002088	epithelial cell of lung	auto from 09_purify_labels
+deuterosomal cell	deuterosomal cell	CL:4033054	epithelial cell of lung	auto from 09_purify_labels
+mucus secreting cell of bronchus submucosal gland	mucus secreting cell	CL:0000319	epithelial cell	auto from 09_purify_labels
+serous cell of epithelium of lobular bronchiole	serous secreting epithelial cell	CL:0002596	epithelial cell	auto from 09_purify_labels
+serous secreting cell of bronchus submucosal gland	serous secreting epithelial cell	CL:0002596	epithelial cell	auto from 09_purify_labels
+tracheobronchial serous cell	serous secreting epithelial cell	CL:0002596	epithelial cell	auto from 09_purify_labels
+myoepithelial cell of bronchus submucosal gland	myoepithelial cell	CL:0000185	epithelial cell	auto from 09_purify_labels
+bronchiolar smooth muscle cell	bronchial smooth muscle cell	CL:0002598	smooth muscle cell	auto from 09_purify_labels
+bronchus fibroblast of lung	lung fibroblast	CL:0002503	fibroblast	auto from 09_purify_labels
+vein endothelial cell of respiratory system	vein endothelial cell	CL:0002543	endothelial cell	auto from 09_purify_labels
+pulmonary ionocyte	pulmonary ionocyte	CL:4028002	epithelial cell of lung	auto from 09_purify_labels
+schwann cell	schwann cell	CL:0002573	glial cell	auto from 09_purify_labels
+endothelial cell of artery	artery endothelial cell	CL:1000413	endothelial cell	auto from 09_purify_labels
+endothelial cell of lymphatic vessel	endothelial cell of lymphatic vessel	CL:0002138	endothelial cell	auto from 09_purify_labels
+vein endothelial cell	vein endothelial cell	CL:0002543	endothelial cell	auto from 09_purify_labels
+blood vessel endothelial cell	endothelial cell of vascular tree	CL:0002139	endothelial cell	auto from 09_purify_labels
+blood vessel smooth muscle cell	vascular smooth muscle cell	CL:0000359	smooth muscle cell	auto from 09_purify_labels
+myofibroblast cell	myofibroblast cell	CL:0000186	stromal cell	auto from 09_purify_labels
+mesothelial cell	mesothelial cell	CL:0000077	epithelial cell	auto from 09_purify_labels
+chondrocyte	chondrocyte	CL:0000138	connective tissue cell	auto from 09_purify_labels
+enteroendocrine cell	enteroendocrine cell	CL:0000164	epithelial cell	auto from 09_purify_labels
+intestinal enteroendocrine cell	enteroendocrine cell	CL:0000164	epithelial cell	auto from 09_purify_labels
+intestinal epithelial cell	epithelial cell of intestine	CL:0002253	epithelial cell	auto from 09_purify_labels
+gut absorptive cell	intestinal absorptive cell	CL:0002563	epithelial cell	auto from 09_purify_labels
+intestinal crypt stem cell of colon	intestinal crypt stem cell	CL:0002328	somatic stem cell	auto from 09_purify_labels
+transit amplifying cell	transit amplifying cell of colon	CL:0002577	somatic stem cell	auto from 09_purify_labels
+paneth cell	paneth cell of colon	CL:0000510	epithelial cell	auto from 09_purify_labels
+tuft cell	tuft cell	CL:0002209	epithelial cell	auto from 09_purify_labels
+intestine goblet cell	goblet cell	CL:0000160	epithelial cell	auto from 09_purify_labels
+kidney collecting duct intercalated cell	kidney collecting duct intercalated cell	CL:1001107	kidney tubule cell	auto from 09_purify_labels
+kidney collecting duct principal cell	kidney collecting duct principal cell	CL:0002518	kidney tubule cell	auto from 09_purify_labels
+kidney distal convoluted tubule epithelial cell	kidney distal convoluted tubule epithelial cell	CL:1000849	kidney tubule cell	auto from 09_purify_labels
+kidney loop of henle thick ascending limb epithelial cell	kidney loop of henle thick ascending limb epithelial cell	CL:1001108	kidney tubule cell	auto from 09_purify_labels
+kidney loop of henle thin ascending limb epithelial cell	kidney loop of henle thin ascending limb epithelial cell	CL:1001111	kidney tubule cell	auto from 09_purify_labels
+kidney loop of henle thin descending limb epithelial cell	kidney loop of henle thin descending limb epithelial cell	CL:1001109	kidney tubule cell	auto from 09_purify_labels
+kidney connecting tubule epithelial cell	kidney connecting tubule epithelial cell	CL:1000768	kidney tubule cell	auto from 09_purify_labels
+kidney interstitial cell	kidney interstitial cell	CL:1000692	stromal cell	auto from 09_purify_labels
+parietal epithelial cell	parietal epithelial cell	CL:0000077	epithelial cell	auto from 09_purify_labels
+epithelial cell of proximal tubule	kidney proximal convoluted tubule epithelial cell	CL:1000838	kidney tubule cell	auto from 09_purify_labels
+podocyte	podocyte	CL:0000653	epithelial cell	auto from 09_purify_labels
+glomerular mesangial cell	glomerular mesangial cell	CL:0000650	kidney cell	auto from 09_purify_labels
+kidney cell	kidney cell	CL:1000497	animal cell	auto from 09_purify_labels
+kidney epithelial cell	epithelial cell of kidney tubule	CL:0002518	epithelial cell	auto from 09_purify_labels
+mesonephric nephron tubule epithelial cell	kidney tubule cell	CL:0002518	epithelial cell	auto from 09_purify_labels
+bergmann glial cell	bergmann glial cell	CL:0000644	glial cell	auto from 09_purify_labels
+brainstem motor neuron	motor neuron	CL:0000100	neuron	auto from 09_purify_labels
+cerebellar granule cell precursor	cerebellar granule cell	CL:0001031	neuron	auto from 09_purify_labels
+choroid plexus epithelial cell	choroid plexus epithelial cell	CL:0002079	epithelial cell	auto from 09_purify_labels
+ependymal cell	ependymal cell	CL:0000065	glial cell	auto from 09_purify_labels
+gabaergic interneuron	gabaergic interneuron	CL:0011005	interneuron	auto from 09_purify_labels
+inhibitory interneuron	inhibitory interneuron	CL:0008030	interneuron	auto from 09_purify_labels
+interneuron	interneuron	CL:0000099	neuron	auto from 09_purify_labels
+granule cell	granule cell	CL:0000120	neuron	auto from 09_purify_labels
+purkinje cell	purkinje cell	CL:0000121	neuron	auto from 09_purify_labels
+peripheral nervous system neuron	peripheral neuron	CL:0000108	neuron	auto from 09_purify_labels
+mesenchymal stem cell	mesenchymal stem cell	CL:0000134	somatic stem cell	auto from 09_purify_labels
+mesenchymal cell	mesenchymal cell	CL:0008019	connective tissue cell	auto from 09_purify_labels
+decidual cell	decidual cell	CL:0000448	stromal cell	auto from 09_purify_labels
+extravillous trophoblast	extravillous trophoblast	CL:0002486	trophoblast cell	auto from 09_purify_labels
+glandular secretory epithelial cell	glandular epithelial cell	CL:0000150	epithelial cell	auto from 09_purify_labels
+hofbauer cell	hofbauer cell	CL:0002489	macrophage	auto from 09_purify_labels
+placental villous trophoblast	villous trophoblast	CL:0002488	trophoblast cell	auto from 09_purify_labels
+syncytiotrophoblast cell	syncytiotrophoblast cell	CL:0000525	trophoblast cell	auto from 09_purify_labels
+vascular associated smooth muscle cell	vascular smooth muscle cell	CL:0000359	smooth muscle cell	auto from 09_purify_labels
+oligodendrocyte precursor cell	oligodendrocyte precursor cell	CL:0002453	glial cell	auto from 09_purify_labels

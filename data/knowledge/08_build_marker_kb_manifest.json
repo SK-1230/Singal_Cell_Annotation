@@ -1,8 +1,8 @@
 {
   "n_external_entries": 26,
-  "n_train_derived_entries": 842,
-  "n_merged_entries": 470,
-  "elapsed_sec": 0.08,
+  "n_train_derived_entries": 1341,
+  "n_merged_entries": 626,
+  "elapsed_sec": 0.09,
   "external_kb_path": "/data/projects/shuke/code/singal_cell_annotation/resources/markers/external_marker_kb.jsonl",
   "v2_marker_path": "/data/projects/shuke/code/singal_cell_annotation/data/intermediate/marker_examples_v2.jsonl",
   "train_kb_path": "/data/projects/shuke/code/singal_cell_annotation/data/knowledge/train_marker_kb.jsonl",

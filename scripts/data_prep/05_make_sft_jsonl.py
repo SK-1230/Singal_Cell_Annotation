@@ -179,6 +179,135 @@ def load_marker_records() -> List[Dict[str, Any]]:
     return records
 
 
+def build_user_prompt_v3(rec: Dict[str, Any], add_no_think_suffix: bool = False) -> str:
+    """
+    V3 prompt: requests ontology-aligned cell type label and CL ID.
+    Uses cell_type_target_label-level context if available.
+    """
+    # prefer positive_markers over marker_genes
+    positive_markers = rec.get("positive_markers", [])
+    if isinstance(positive_markers, list) and positive_markers and isinstance(positive_markers[0], dict):
+        top_markers = [m.get("gene", "") for m in positive_markers[:10] if m.get("gene")]
+    else:
+        top_markers = rec.get("marker_genes", [])[:10]
+
+    negative_markers = rec.get("negative_markers", [])
+    if isinstance(negative_markers, list) and negative_markers and isinstance(negative_markers[0], dict):
+        neg_genes = [m.get("gene", "") for m in negative_markers[:5] if m.get("gene")]
+    else:
+        neg_genes = []
+
+    disease = rec.get("disease", "unknown") or "unknown"
+    tissue = rec.get("tissue_general", rec.get("tissue", "unknown")) or "unknown"
+    organism = rec.get("organism", "Homo sapiens") or "Homo sapiens"
+
+    markers_str = ", ".join(top_markers)
+    neg_str = f"\nTop negative markers (low/absent expression): {', '.join(neg_genes)}" if neg_genes else ""
+
+    prompt = (
+        "You are given ranked marker genes from a single-cell RNA-seq cluster.\n\n"
+        f"Organism: {organism}\n"
+        f"Tissue: {tissue}\n"
+        f"Disease/Context: {disease}\n"
+        f"Top positive markers (ranked by expression specificity): {markers_str}"
+        f"{neg_str}\n\n"
+        "Task:\n"
+        "1. Predict the most likely cell type using canonical Cell Ontology nomenclature.\n"
+        "2. If confident, provide the Cell Ontology ID (e.g., CL:0000236).\n"
+        "3. Provide the parent cell type (broader category).\n"
+        "4. List 2-4 supporting markers from the provided genes.\n"
+        "5. Estimate confidence: high / medium / low.\n"
+        "6. Indicate if manual review is needed.\n"
+        "7. Give a short decision and rationale.\n\n"
+        "Return valid JSON with keys: "
+        "cell_type, cell_ontology_id, parent_cell_type, supporting_markers, "
+        "confidence_label, need_manual_review, decision, rationale."
+    )
+
+    if add_no_think_suffix:
+        prompt += " /no_think"
+
+    return prompt
+
+
+def build_assistant_answer_v3(rec: Dict[str, Any], with_empty_think: bool = False) -> str:
+    """
+    V3 assistant answer: uses cell_type_target_label as primary, with ontology ID.
+    """
+    # primary label: target > ontology_label > clean
+    cell_type = (
+        rec.get("cell_type_target_label")
+        or rec.get("cell_ontology_label")
+        or rec.get("cell_type_clean")
+        or "unknown"
+    )
+    cell_ontology_id = rec.get("cell_type_target_id") or rec.get("cell_ontology_id") or ""
+    parent_cell_type = rec.get("cell_ontology_parent_label") or ""
+
+    # supporting markers
+    positive_markers = rec.get("positive_markers", [])
+    if isinstance(positive_markers, list) and positive_markers and isinstance(positive_markers[0], dict):
+        sup_markers = [m.get("gene", "") for m in positive_markers[:4] if m.get("gene")]
+    else:
+        sup_markers = rec.get("marker_genes", [])[:4]
+
+    confidence = confidence_from_record_V2(rec)
+    need_review = confidence == "low"
+
+    if confidence == "high":
+        decision = "accept"
+    elif confidence == "medium":
+        decision = "review"
+    else:
+        decision = "unresolved"
+
+    rationale = (
+        f"Marker profile is most consistent with {cell_type}."
+    )
+    if sup_markers:
+        rationale += f" Key markers: {', '.join(sup_markers)}."
+    if parent_cell_type:
+        rationale += f" Belongs to {parent_cell_type} lineage."
+
+    answer_dict = {
+        "cell_type": cell_type,
+        "cell_ontology_id": cell_ontology_id,
+        "parent_cell_type": parent_cell_type,
+        "supporting_markers": sup_markers,
+        "confidence_label": confidence,
+        "need_manual_review": need_review,
+        "decision": decision,
+        "rationale": rationale,
+    }
+
+    answer_text = json.dumps(answer_dict, ensure_ascii=False)
+    if with_empty_think:
+        return "<think>\n\n</think>\n\n" + answer_text
+    return answer_text
+
+
+def load_marker_records_v3() -> List[Dict[str, Any]]:
+    """Load v2 marker records, but filtered to prefer those with target label."""
+    records = load_marker_records_v2()
+    if not records:
+        logging.warning("No v2 records — cannot build v3 SFT data")
+        return []
+
+    # Filter: only keep records where cell_type_target_label is populated
+    with_target = [r for r in records if r.get("cell_type_target_label")]
+    without_target = [r for r in records if not r.get("cell_type_target_label")]
+
+    if with_target:
+        logging.info(
+            "v3 loader: %d records with target_label, %d without (using all)",
+            len(with_target), len(without_target),
+        )
+    else:
+        logging.warning("No v3 records have cell_type_target_label — using all v2 records as fallback")
+
+    return records  # return all, builder will use best available label
+
+
 def load_marker_records_v2() -> List[Dict[str, Any]]:
     """Load v2 marker records from marker_examples_v2.jsonl."""
     path = Path(cfg.MARKER_EXAMPLES_V2_JSONL)
@@ -474,6 +603,62 @@ def main() -> None:
     print(f"  full_records_v2   : {len(v2_full_records)}")
     print(f"  distill_records   : {len(v2_distill_records)}")
     print(f"  manifest_v2       : {manifest_v2_path}")
+
+    # =========================
+    # V3: ontology-aligned SFT
+    # =========================
+    marker_records_v3 = load_marker_records_v3()
+    if marker_records_v3:
+        full_records_v3 = []
+        msgs_v3 = []
+        msgs_no_think_v3 = []
+
+        for rec in marker_records_v3:
+            msg_std = {
+                "messages": [
+                    {"role": "system", "content": cfg.SYSTEM_PROMPT},
+                    {"role": "user", "content": build_user_prompt_v3(rec, add_no_think_suffix=False)},
+                    {"role": "assistant", "content": build_assistant_answer_v3(rec, with_empty_think=False)},
+                ],
+                # carry through full record fields for split/retrieval
+                "dataset_id": rec.get("dataset_id", ""),
+                "tissue_general": rec.get("tissue_general", ""),
+                "cell_type_target_label": rec.get("cell_type_target_label") or rec.get("cell_type_clean", ""),
+                "cell_type_target_id": rec.get("cell_type_target_id") or rec.get("cell_ontology_id", ""),
+                "cell_type_clean": rec.get("cell_type_clean", ""),
+                "cell_ontology_parent_label": rec.get("cell_ontology_parent_label", ""),
+                "collection_name": rec.get("collection_name", ""),
+                "collection_doi": rec.get("collection_doi", ""),
+            }
+            msgs_v3.append({"messages": msg_std["messages"]})
+
+            msg_nt = {
+                "messages": [
+                    {"role": "system", "content": cfg.SYSTEM_PROMPT},
+                    {"role": "user", "content": build_user_prompt_v3(rec, add_no_think_suffix=True)},
+                    {"role": "assistant", "content": build_assistant_answer_v3(rec, with_empty_think=True)},
+                ]
+            }
+            msgs_no_think_v3.append(msg_nt)
+
+            full_rec = dict(rec)
+            full_rec["messages"] = msg_std["messages"]
+            full_rec["messages_no_think"] = msg_nt["messages"]
+            full_rec["cell_type_target_label"] = msg_std["cell_type_target_label"]
+            full_rec["cell_type_target_id"] = msg_std["cell_type_target_id"]
+            full_rec["collection_name"] = msg_std["collection_name"]
+            full_rec["collection_doi"] = msg_std["collection_doi"]
+            full_records_v3.append(full_rec)
+
+        write_jsonl(cfg.SFT_RECORDS_FULL_V3_JSONL, full_records_v3)
+        write_jsonl(cfg.SFT_MESSAGES_V3_JSONL, msgs_v3)
+        write_jsonl(cfg.SFT_MESSAGES_NO_THINK_V3_JSONL, msgs_no_think_v3)
+        logging.info(
+            "V3 SFT: wrote %d records to %s",
+            len(full_records_v3), cfg.SFT_RECORDS_FULL_V3_JSONL,
+        )
+    else:
+        logging.warning("No v3 marker records available — skipping v3 SFT generation")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,14 @@
+=== 09_purify_labels run summary ===
+
+Input  : 544 records
+Kept   : 536
+Dropped: 8
+Fixed  : 286
+Alias TSV new entries: 151
+
+Dropped labels:
+    4x  neoplastic cell
+    3x  abnormal cell
+    1x  malignant cell
+
+Still missing ontology_id after fix:

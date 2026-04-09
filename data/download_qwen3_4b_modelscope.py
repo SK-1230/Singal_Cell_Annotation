@@ -1,7 +1,7 @@
 from pathlib import Path
 from modelscope import snapshot_download
 
-MODEL_ID = "Qwen/Qwen3-4B"
+MODEL_ID = "Qwen/Qwen3-8B"
 CACHE_DIR = Path("./my_models")
 
 CACHE_DIR.mkdir(parents=True, exist_ok=True)

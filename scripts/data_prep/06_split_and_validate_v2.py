@@ -49,6 +49,12 @@ from transformers import AutoTokenizer
 
 import data_prep_config as cfg
 
+try:
+    from sca.data.split_grouping import resolve_group_key, get_unique_groups
+    _GROUPING_AVAILABLE = True
+except ImportError:
+    _GROUPING_AVAILABLE = False
+
 from sca.data.split_builder import (
     build_test_rare_subset,
     build_test_unmapped_subset,
@@ -545,6 +551,28 @@ def save_summary(
 
 
 # =========================
+# Group-level split support (Phase-A)
+# =========================
+
+def assign_groups_to_records(records: List[dict]) -> List[dict]:
+    """
+    Assign a group_id to each record based on collection_doi → collection_name → dataset_id.
+    This group_id is used for group-level split to prevent leakage.
+    """
+    primary_key = getattr(cfg, "SPLIT_GROUP_KEY", "collection_doi")
+    fallback_keys = getattr(cfg, "SPLIT_GROUP_FALLBACK_KEYS", ["collection_name", "dataset_id"])
+
+    if _GROUPING_AVAILABLE:
+        for rec in records:
+            rec["_group_id"] = resolve_group_key(rec, primary_key, fallback_keys)
+    else:
+        # fallback: use dataset_id
+        for rec in records:
+            rec["_group_id"] = str(rec.get("dataset_id", "unknown"))
+    return records
+
+
+# =========================
 # 主流程
 # =========================
 
@@ -562,6 +590,11 @@ def main(
     if not records:
         raise ValueError(f"No records found in {cfg.SFT_RECORDS_FULL_JSONL}")
 
+    # Phase-A: assign group IDs for study-level split
+    records = assign_groups_to_records(records)
+    group_ids = sorted(set(r["_group_id"] for r in records))
+    logging.info("Group-level split: found %d unique groups (vs %d records)", len(group_ids), len(records))
+
     # 2) 构建 dataset profiles
     dataset_profiles = build_dataset_profiles(records)
     dataset_profiles_path = split_dir / "dataset_profiles.csv"
@@ -569,33 +602,62 @@ def main(
     logging.info("Saved dataset profiles to %s", dataset_profiles_path)
     logging.info("Total datasets=%d", len(dataset_profiles))
 
-    # 3) 选择切分方式
+    # 3) 选择切分方式（基于 group_id 而非 dataset_id）
+    # Build group-level profiles for split
+    group_profiles = []
+    group_tissue_map: Dict[str, List[str]] = defaultdict(list)
+    for rec in records:
+        group_tissue_map[rec["_group_id"]].append(rec.get("tissue_general", "unknown"))
+    for gid in group_ids:
+        tissues = group_tissue_map[gid]
+        group_profiles.append({
+            "dataset_id": gid,  # reuse dataset_id field for compatibility
+            "main_tissue_general": dominant_value(tissues, default="unknown"),
+            "n_records": len(tissues),
+            "n_cell_types": 0,
+        })
+
     if cfg.SPLIT_V2_USE_MAIN_TISSUE_STRATIFY:
-        train_ids, val_ids, test_ids = stratified_split_dataset_ids_by_main_tissue(
-            profiles=dataset_profiles,
+        train_group_ids, val_group_ids, test_group_ids = stratified_split_dataset_ids_by_main_tissue(
+            profiles=group_profiles,
             train_ratio=cfg.SPLIT_TRAIN_RATIO,
             val_ratio=cfg.SPLIT_VAL_RATIO,
             test_ratio=cfg.SPLIT_TEST_RATIO,
             seed=cfg.RANDOM_SEED,
         )
-        logging.info("Using main_tissue_general stratified dataset split.")
+        logging.info("Using main_tissue_general stratified group split.")
     else:
-        train_ids, val_ids, test_ids = simple_random_split_dataset_ids(
-            profiles=dataset_profiles,
+        train_group_ids, val_group_ids, test_group_ids = simple_random_split_dataset_ids(
+            profiles=group_profiles,
             train_ratio=cfg.SPLIT_TRAIN_RATIO,
             val_ratio=cfg.SPLIT_VAL_RATIO,
             test_ratio=cfg.SPLIT_TEST_RATIO,
             seed=cfg.RANDOM_SEED,
         )
-        logging.info("Using simple random dataset split.")
+        logging.info("Using simple random group split.")
 
-    validate_no_overlap(train_ids, val_ids, test_ids)
+    validate_no_overlap(train_group_ids, val_group_ids, test_group_ids)
 
-    # 4) 将 full records 按 dataset_id 分发到 train/val/test
+    # Also compute dataset_id-level sets for downstream v2 compatibility
+    train_ids = set(rec["dataset_id"] for rec in records if rec["_group_id"] in train_group_ids)
+    val_ids = set(rec["dataset_id"] for rec in records if rec["_group_id"] in val_group_ids)
+    test_ids = set(rec["dataset_id"] for rec in records if rec["_group_id"] in test_group_ids)
+
+    logging.info(
+        "Group split: train_groups=%d | val_groups=%d | test_groups=%d",
+        len(train_group_ids), len(val_group_ids), len(test_group_ids),
+    )
+    logging.info(
+        "Dataset split (derived): train_datasets=%d | val_datasets=%d | test_datasets=%d",
+        len(train_ids), len(val_ids), len(test_ids),
+    )
+
+    # 4) 将 full records 按 _group_id 分发到 train/val/test
     train_full, val_full, test_full = [], [], []
 
     for rec in records:
         did = rec["dataset_id"]
+        gid = rec["_group_id"]
 
         full_out = {
             "dataset_id": rec["dataset_id"],
@@ -613,11 +675,11 @@ def main(
             "messages_no_think": rec["messages_no_think"],
         }
 
-        if did in train_ids:
+        if gid in train_group_ids:
             train_full.append(full_out)
-        elif did in val_ids:
+        elif gid in val_group_ids:
             val_full.append(full_out)
-        elif did in test_ids:
+        elif gid in test_group_ids:
             test_full.append(full_out)
 
     # 5) 若 val 为空，则按配置决定是否构造 pseudo-val
@@ -811,7 +873,58 @@ def main(
         write_csv(split_dir / "dataset_profiles_v2.csv", v2_profiles)
         logging.info("Saved v2 dataset profiles: %d datasets", len(v2_profiles))
 
-    # 12) 保存 summary
+    # 12) Phase 3 — v3 splits (ontology-aligned, canonical labels, no LLM distillation)
+    v3_records_path = Path(cfg.SFT_RECORDS_FULL_V3_JSONL)
+    if not v3_records_path.exists():
+        logging.warning(
+            "v3 records not found at %s; skipping v3 split.", v3_records_path
+        )
+    else:
+        v3_records = load_full_records(v3_records_path)
+        logging.info("Loaded %d v3 SFT records", len(v3_records))
+
+        # Partition v3 records using the same dataset IDs as v1 split
+        train_v3: List[dict] = []
+        val_v3: List[dict] = []
+        test_v3: List[dict] = []
+        for rec in v3_records:
+            did = rec.get("dataset_id", "")
+            if did in train_ids:
+                train_v3.append(rec)
+            elif did in val_ids:
+                val_v3.append(rec)
+            elif did in test_ids:
+                test_v3.append(rec)
+
+        logging.info(
+            "v3 split: train=%d | val=%d | test=%d",
+            len(train_v3), len(val_v3), len(test_v3),
+        )
+
+        train_v3_msg, train_v3_no = convert_full_to_msg_and_no(train_v3)
+        val_v3_msg, val_v3_no = convert_full_to_msg_and_no(val_v3)
+        test_v3_msg, test_v3_no = convert_full_to_msg_and_no(test_v3)
+
+        write_jsonl(split_dir / "train_full_v3.jsonl", train_v3)
+        write_jsonl(split_dir / "val_full_v3.jsonl", val_v3)
+        write_jsonl(split_dir / "test_full_v3.jsonl", test_v3)
+
+        write_jsonl(split_dir / "train_messages_no_think_v3.jsonl", train_v3_no)
+        write_jsonl(split_dir / "val_messages_no_think_v3.jsonl", val_v3_no)
+        write_jsonl(split_dir / "test_messages_no_think_v3.jsonl", test_v3_no)
+
+        # Count valid CL IDs in train for quick sanity check
+        n_with_cl = sum(
+            1 for r in train_v3
+            if (r.get("cell_ontology_id") or "").startswith("CL:")
+        )
+        logging.info(
+            "v3 train ontology_id coverage: %d/%d (%.1f%%)",
+            n_with_cl, len(train_v3),
+            n_with_cl / len(train_v3) * 100 if train_v3 else 0,
+        )
+
+    # 13) 保存 summary
     save_summary(
         split_dir=split_dir,
         train_ids=train_ids,

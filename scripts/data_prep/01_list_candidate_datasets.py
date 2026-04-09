@@ -11,6 +11,15 @@ from tqdm import tqdm
 
 import data_prep_config as cfg
 
+# Phase-A: metadata guardrails
+try:
+    import sys as _sys
+    _sys.path.insert(0, str(cfg.PROJECT_DIR / "src"))
+    from sca.data.curation_rules import passes_metadata_guardrails, score_reference_preference
+    _CURATION_AVAILABLE = True
+except ImportError:
+    _CURATION_AVAILABLE = False
+
 
 # =========================
 # 日志配置
@@ -170,7 +179,7 @@ def fetch_tissue_obs(
     t1 = time.time()
     logging.info("[%s] reader created in %.2fs", tissue_general, t1 - t0)
 
-    logging.info("[%s] running concat() ...", tissue_general)
+    logging.info("[%s] running concat() — may take several minutes for large tissues (blood ~23min) ...", tissue_general)
     table = reader.concat()
 
     t2 = time.time()
@@ -224,6 +233,18 @@ def filter_candidate_datasets(merged: pd.DataFrame) -> pd.DataFrame:
     filtered["n_tissues"] = filtered["tissues"].map(count_tokens_in_semicolon_field)
     filtered["n_diseases"] = filtered["diseases"].map(count_tokens_in_semicolon_field)
 
+    # Phase-A: apply metadata guardrails
+    if _CURATION_AVAILABLE:
+        mask = filtered.apply(lambda row: passes_metadata_guardrails(row, cfg), axis=1)
+        n_before = len(filtered)
+        filtered = filtered[mask].copy()
+        logging.info(
+            "Metadata guardrails: %d -> %d datasets (dropped %d)",
+            n_before, len(filtered), n_before - len(filtered),
+        )
+    else:
+        logging.warning("curation_rules not available — skipping guardrail filtering")
+
     # 先做一个基础排序，便于查看 candidate 表
     filtered = filtered.sort_values(
         by=["tissues", "unique_cell_types", "cell_count"],
@@ -276,11 +297,18 @@ def build_auto_score(filtered: pd.DataFrame) -> pd.DataFrame:
     else:
         df["score_low_disease_mix"] = 0.0
 
+    # Reference/atlas preference
+    if _CURATION_AVAILABLE:
+        df["score_reference"] = df.apply(lambda row: score_reference_preference(row, cfg), axis=1)
+    else:
+        df["score_reference"] = 0.0
+
     df["auto_score"] = (
         cfg.AUTO_SCORE_WEIGHT_CELLTYPE * df["score_celltype"]
         + cfg.AUTO_SCORE_WEIGHT_CELLS * df["score_cells"]
         + cfg.AUTO_SCORE_WEIGHT_SINGLE_TISSUE * df["score_single_tissue"]
         + cfg.AUTO_SCORE_WEIGHT_LOW_DISEASE_MIX * df["score_low_disease_mix"]
+        + getattr(cfg, "AUTO_SCORE_WEIGHT_REFERENCE", 0.5) * df["score_reference"]
     )
 
     # 再按自动分数排序
@@ -485,11 +513,21 @@ def main() -> None:
 
         for tissue in tqdm(cfg.TARGET_TISSUES, desc="Query tissues", unit="tissue"):
             t0 = time.time()
-            obs = fetch_tissue_obs(
-                census=census,
-                tissue_general=tissue,
-                save_obs_preview=True,
-            )
+            try:
+                obs = fetch_tissue_obs(
+                    census=census,
+                    tissue_general=tissue,
+                    save_obs_preview=True,
+                )
+            except Exception as e:
+                logging.error(
+                    "[%s] fetch_tissue_obs failed, skipping tissue. error=%r",
+                    tissue, e,
+                )
+                tissue_row_stats.append(
+                    {"tissue": tissue, "rows": 0, "elapsed_sec": time.time() - t0}
+                )
+                continue
 
             tissue_dataset_stats = summarize_one_tissue_obs(obs, tissue)
             partial_stats.append(tissue_dataset_stats)

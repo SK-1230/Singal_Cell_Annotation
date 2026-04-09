@@ -24,6 +24,13 @@ try:
 except ImportError:
     _ONTOLOGY_AVAILABLE = False
 
+# Phase-A: target labeling
+try:
+    from sca.data.target_labeling import build_target_label_columns, compute_target_mapping_stats
+    _TARGET_LABELING_AVAILABLE = True
+except ImportError:
+    _TARGET_LABELING_AVAILABLE = False
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s"
@@ -97,6 +104,10 @@ def make_empty_record(h5ad_path: Path) -> Dict[str, Any]:
         "n_mapped_ontology_labels": None,
         "n_unmapped_ontology_labels": None,
         "n_unique_cl_ids": None,
+        # Phase-A: target label stats
+        "target_mapped_ratio": None,
+        "n_target_labels": None,
+        "n_target_ids": None,
         "elapsed_sec": None,
         "error": "",
     }
@@ -261,7 +272,7 @@ def apply_ontology_columns(obs: pd.DataFrame) -> pd.DataFrame:
 
 def write_cell_type_mapping(adata: ad.AnnData, stem: str) -> None:
     """Write per-unique-label cell_type_mapping.csv sidecar."""
-    obs = adata.obs.copy()
+    obs = adata.obs
     group_cols = [
         "cell_type_input_raw", "cell_type_gold", "cell_type_clean",
         "cell_ontology_id", "cell_ontology_label", "cell_ontology_parent_label",
@@ -274,7 +285,7 @@ def write_cell_type_mapping(adata: ad.AnnData, stem: str) -> None:
         return
 
     mapping_df = (
-        obs.groupby(group_cols, dropna=False)
+        obs[group_cols].groupby(group_cols, dropna=False, observed=True)
         .size()
         .reset_index(name="n_cells")
     )
@@ -295,6 +306,11 @@ def write_dataset_profile(adata: ad.AnnData, stem: str, dataset_id: str) -> None
     n_unique_cl_ids = int(obs["cell_ontology_id"].dropna().nunique()) if "cell_ontology_id" in obs.columns else 0
     n_unique_ct = int(obs["cell_type_clean"].astype(str).nunique()) if "cell_type_clean" in obs.columns else 0
     mapped_ratio = round(n_mapped / adata.n_obs, 4) if adata.n_obs > 0 else 0.0
+
+    target_stats = {}
+    if _TARGET_LABELING_AVAILABLE and "cell_type_target_id" in obs.columns:
+        from sca.data.target_labeling import compute_target_mapping_stats
+        target_stats = compute_target_mapping_stats(obs)
 
     dominant_tissue_general = "unknown"
     if "tissue_general" in obs.columns:
@@ -319,6 +335,7 @@ def write_dataset_profile(adata: ad.AnnData, stem: str, dataset_id: str) -> None
         "n_unique_cell_types": n_unique_ct,
         "n_unique_cl_ids": n_unique_cl_ids,
         "mapped_ratio": mapped_ratio,
+        **target_stats,
     }
 
     out_path = cfg.CLEAN_H5AD_DIR / f"{stem}.dataset_profile.json"
@@ -452,6 +469,11 @@ def clean_one_file(h5ad_path: Path) -> Dict[str, Any]:
 
     adata = ad.read_h5ad(h5ad_path)
 
+    # 修复重复 obs_names（CELLxGENE 导出文件有时存在重复 barcode）
+    # 不修复时，adata[keep].obs_names 中的重复项会导致 obs.loc[...] 返回多行而报错
+    if not adata.obs_names.is_unique:
+        adata.obs_names_make_unique()
+
     record["n_obs_before"] = int(adata.n_obs)
     record["n_vars_before"] = int(adata.n_vars)
 
@@ -580,16 +602,64 @@ def clean_one_file(h5ad_path: Path) -> Dict[str, Any]:
         return record
 
     # Phase 1: add cell_type_input_raw before compressing categories
+    # 重新同步 obs（label-frequency 过滤后 adata.obs 行数已减少）
+    obs = adata.obs.copy()
     obs["cell_type_input_raw"] = obs["cell_type"].map(normalize_text_keep_na)
     adata.obs = obs
 
     # Phase 1: apply ontology columns
     adata.obs = apply_ontology_columns(adata.obs)
 
+    # Phase-A: build unified target label columns
+    if _TARGET_LABELING_AVAILABLE:
+        target_mode = getattr(cfg, "TARGET_LABEL_MODE", "ontology_label")
+        target_fallback = getattr(cfg, "TARGET_FALLBACK_TO_PARENT", True)
+        target_fallback_source = getattr(cfg, "TARGET_FALLBACK_TO_SOURCE_CLEAN", True)
+        adata.obs = build_target_label_columns(
+            adata.obs,
+            mode=target_mode,
+            fallback_to_parent=target_fallback,
+            fallback_to_source_clean=target_fallback_source,
+        )
+        # Phase-A: filter unmapped cells if configured
+        if getattr(cfg, "REQUIRE_MAPPED_CELL_FOR_TRAIN", False):
+            mapped_mask = adata.obs["cell_type_target_id"].notna()
+            n_before_target = adata.n_obs
+            adata = adata[mapped_mask].copy()
+            logging.info(
+                "REQUIRE_MAPPED_CELL_FOR_TRAIN: %d -> %d cells (dropped %d unmapped)",
+                n_before_target, adata.n_obs, n_before_target - adata.n_obs,
+            )
+            if adata.n_obs == 0:
+                record["status"] = "skipped"
+                record["error"] = "no cells left after target-label filtering"
+                record["elapsed_sec"] = round(time.time() - t0, 2)
+                del adata
+                gc.collect()
+                return record
+    else:
+        logging.warning("target_labeling not available — skipping target label columns")
+
     # Phase 1: collect ontology stats before compressing to category
     n_mapped = int(adata.obs["cell_ontology_id"].notna().sum()) if "cell_ontology_id" in adata.obs.columns else 0
     n_unmapped = int(adata.n_obs) - n_mapped
     n_unique_cl_ids = int(adata.obs["cell_ontology_id"].dropna().nunique()) if "cell_ontology_id" in adata.obs.columns else 0
+
+    # Phase-A: check dataset-level ontology quality
+    if getattr(cfg, "REQUIRE_ONTOLOGY_MAPPED_DATASET", False):
+        mapped_ratio_check = n_mapped / adata.n_obs if adata.n_obs > 0 else 0.0
+        min_ratio = getattr(cfg, "MIN_DATASET_MAPPED_RATIO", 0.3)
+        if mapped_ratio_check < min_ratio:
+            record["status"] = "skipped"
+            record["error"] = f"ontology_mapped_ratio_too_low: {mapped_ratio_check:.3f} < {min_ratio}"
+            record["elapsed_sec"] = round(time.time() - t0, 2)
+            logging.warning(
+                "Skip %s: ontology mapped ratio too low (%.3f < %.3f)",
+                h5ad_path.name, mapped_ratio_check, min_ratio,
+            )
+            del adata
+            gc.collect()
+            return record
 
     # 类别列压缩
     adata.obs["cell_type_clean"] = adata.obs["cell_type_clean"].astype("category")
@@ -621,6 +691,12 @@ def clean_one_file(h5ad_path: Path) -> Dict[str, Any]:
     record["n_mapped_ontology_labels"] = n_mapped
     record["n_unmapped_ontology_labels"] = n_unmapped
     record["n_unique_cl_ids"] = n_unique_cl_ids
+    # Phase-A: target label stats
+    if "cell_type_target_id" in adata.obs.columns and _TARGET_LABELING_AVAILABLE:
+        target_stats = compute_target_mapping_stats(adata.obs)
+        record["target_mapped_ratio"] = target_stats["target_mapped_ratio"]
+        record["n_target_labels"] = target_stats["n_target_labels"]
+        record["n_target_ids"] = target_stats["n_target_ids"]
     record["elapsed_sec"] = round(time.time() - t0, 2)
 
     logging.info(

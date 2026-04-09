@@ -1,8 +1,8 @@
 === 02_export_selected_datasets run summary ===
 
-Total selected datasets: 51
-Exported: 28
-Already existed: 23
+Total selected datasets: 40
+Exported: 11
+Already existed: 29
 Failed: 0
 
 Manifest: /data/projects/shuke/code/singal_cell_annotation/data/meta/raw_export_manifest.csv

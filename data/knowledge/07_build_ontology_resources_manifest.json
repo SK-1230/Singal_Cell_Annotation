@@ -1,7 +1,7 @@
 {
-  "n_ontology_entries": 58,
-  "n_with_parent": 58,
+  "n_ontology_entries": 166,
+  "n_with_parent": 166,
   "n_with_organ_scope": 0,
-  "n_leaf_level": 37,
-  "elapsed_sec": 0.03
+  "n_leaf_level": 118,
+  "elapsed_sec": 0.06
 }

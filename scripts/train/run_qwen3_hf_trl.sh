@@ -6,7 +6,7 @@ cd /data/projects/shuke/code/singal_cell_annotation
 export CUDA_VISIBLE_DEVICES=0
 
 PYTHON_BIN="python"
-SCRIPT_PATH="/data/projects/shuke/code/singal_cell_annotation/scripts/train/run_qwen3_hf_trl.py"
+SCRIPT_PATH="/data/projects/shuke/code/singal_cell_annotation/scripts/train/train_qwen3_hf_trl.py"
 LOG_DIR="/data/projects/shuke/code/singal_cell_annotation/data/meta"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 LOG_FILE="${LOG_DIR}/train_qwen3_hf_trl_${TIMESTAMP}.log"

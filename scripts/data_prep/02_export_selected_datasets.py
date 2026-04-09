@@ -3,6 +3,8 @@ from __future__ import annotations
 import gc
 import json
 import logging
+import multiprocessing
+import tempfile
 import time
 from pathlib import Path
 from typing import Any, Dict, List
@@ -264,7 +266,64 @@ def save_run_summary(results: List[Dict[str, Any]]) -> None:
     logging.info("Saved run summary to %s", summary_path)
 
 
+def _subprocess_export_worker(
+    row_dict: Dict[str, Any],
+    version: str,
+    result_json_path: str,
+) -> None:
+    """
+    在独立子进程中执行单个数据集的下载。
+    结果以 JSON 写入 result_json_path。
+    若 TileDB C++ 层 abort()，进程直接消失，文件不会生成，父进程据此判断崩溃。
+    """
+    row = pd.Series(row_dict)
+    dataset_id = str(row["dataset_id"])
+    result = None
+
+    for soma_attempt in range(1, cfg.EXPORT_MAX_RETRIES + 1):
+        try:
+            logging.info(
+                "open_soma() attempt %d for dataset_id=%s",
+                soma_attempt, dataset_id,
+            )
+            with cellxgene_census.open_soma(census_version=version) as census:
+                result = export_one_dataset(census=census, row=row)
+            break
+        except Exception as e:
+            logging.exception(
+                "open_soma() failed on attempt %d for %s",
+                soma_attempt, dataset_id,
+            )
+            if soma_attempt < cfg.EXPORT_MAX_RETRIES:
+                logging.info(
+                    "will retry open_soma() after %ds...",
+                    cfg.EXPORT_RETRY_SLEEP_SECONDS,
+                )
+                time.sleep(cfg.EXPORT_RETRY_SLEEP_SECONDS)
+            else:
+                result = {
+                    "dataset_id": dataset_id,
+                    "dataset_title": str(row.get("dataset_title", "")),
+                    "output_path": str(cfg.RAW_H5AD_DIR / f"{dataset_id}.h5ad"),
+                    "status": "failed",
+                    "n_obs": None, "n_vars": None, "elapsed_sec": None,
+                    "attempts": soma_attempt,
+                    "error": repr(e),
+                }
+
+    Path(result_json_path).write_text(
+        json.dumps(result, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+
 def main() -> None:
+    # 将日志同时写入固定文件，无需外部重定向
+    _log_path = cfg.META_DIR / "02_export_selected_datasets.log"
+    _fh = logging.FileHandler(_log_path, mode="a", encoding="utf-8")
+    _fh.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s | %(message)s"))
+    logging.getLogger().addHandler(_fh)
+
     overall_t0 = time.time()
     ensure_parent_dirs()
 
@@ -285,31 +344,82 @@ def main() -> None:
         desc="Export datasets",
         unit="dataset",
     ):
-        # 每个数据集使用独立的 SOMA 连接，避免共享长连接在大文件下载时 TileDB C++ 层超时
-        # 导致进程被直接 abort（Python 的 try/except 无法捕获 C++ std::abort/SIGSEGV）
+        # 每个数据集在独立子进程中运行，隔离 TileDB C++ 层的 abort()/SIGSEGV。
+        # 子进程崩溃时父进程感知退出码，触发重试；Python try/except 捕获不到 C++ abort。
         dataset_id = str(row["dataset_id"])
+        row_dict = row.to_dict()
         result = None
-        for soma_attempt in range(1, cfg.EXPORT_MAX_RETRIES + 1):
-            try:
-                logging.info("open_soma() attempt %d for dataset_id=%s", soma_attempt, dataset_id)
-                with cellxgene_census.open_soma(census_version=version) as census:
-                    result = export_one_dataset(census=census, row=row)
+
+        subprocess_timeout = getattr(cfg, "EXPORT_SUBPROCESS_TIMEOUT_SECONDS", 7200)
+
+        for crash_attempt in range(1, cfg.EXPORT_MAX_RETRIES + 1):
+            # 用临时文件在父子进程间传递结果
+            with tempfile.NamedTemporaryFile(
+                suffix=".json", delete=False, dir=cfg.META_DIR
+            ) as tf:
+                result_json_path = tf.name
+
+            proc = multiprocessing.get_context("fork").Process(
+                target=_subprocess_export_worker,
+                args=(row_dict, version, result_json_path),
+                daemon=True,
+            )
+            proc.start()
+            proc.join(timeout=subprocess_timeout)
+
+            timed_out = proc.is_alive()
+            if timed_out:
+                logging.warning(
+                    "[%s] subprocess timed out after %ds on crash_attempt %d/%d — killing",
+                    dataset_id, subprocess_timeout, crash_attempt, cfg.EXPORT_MAX_RETRIES,
+                )
+                proc.terminate()
+                proc.join(timeout=30)
+                if proc.is_alive():
+                    proc.kill()
+                    proc.join()
+
+            result_file = Path(result_json_path)
+            if not timed_out and proc.exitcode == 0 and result_file.exists():
+                result = json.loads(result_file.read_text(encoding="utf-8"))
+                result_file.unlink()
                 break
-            except Exception as e:
-                logging.exception("open_soma() failed on attempt %d for %s", soma_attempt, dataset_id)
-                if soma_attempt < cfg.EXPORT_MAX_RETRIES:
-                    logging.info("will retry open_soma() after %ds...", cfg.EXPORT_RETRY_SLEEP_SECONDS)
+            else:
+                exit_reason = f"timeout after {subprocess_timeout}s" if timed_out else f"exitcode={proc.exitcode}"
+                logging.warning(
+                    "[%s] subprocess failed (%s) on crash_attempt %d/%d",
+                    dataset_id, exit_reason, crash_attempt, cfg.EXPORT_MAX_RETRIES,
+                )
+                if result_file.exists():
+                    result_file.unlink()
+                # 清理可能的半成品 h5ad
+                incomplete = cfg.RAW_H5AD_DIR / f"{dataset_id}.h5ad"
+                if incomplete.exists():
+                    incomplete.unlink()
+                    logging.warning("[%s] removed incomplete h5ad", dataset_id)
+
+                if crash_attempt < cfg.EXPORT_MAX_RETRIES:
+                    logging.info(
+                        "[%s] will retry subprocess after %ds...",
+                        dataset_id, cfg.EXPORT_RETRY_SLEEP_SECONDS,
+                    )
                     time.sleep(cfg.EXPORT_RETRY_SLEEP_SECONDS)
-                else:
-                    result = {
-                        "dataset_id": dataset_id,
-                        "dataset_title": str(row.get("dataset_title", "")),
-                        "output_path": str(cfg.RAW_H5AD_DIR / f"{dataset_id}.h5ad"),
-                        "status": "failed",
-                        "n_obs": None, "n_vars": None, "elapsed_sec": None,
-                        "attempts": soma_attempt,
-                        "error": repr(e),
-                    }
+
+        if result is None:
+            logging.error(
+                "[%s] all %d subprocess attempts failed (C++ crash); marking as failed",
+                dataset_id, cfg.EXPORT_MAX_RETRIES,
+            )
+            result = {
+                "dataset_id": dataset_id,
+                "dataset_title": str(row.get("dataset_title", "")),
+                "output_path": str(cfg.RAW_H5AD_DIR / f"{dataset_id}.h5ad"),
+                "status": "failed",
+                "n_obs": None, "n_vars": None, "elapsed_sec": None,
+                "attempts": cfg.EXPORT_MAX_RETRIES,
+                "error": "subprocess crash (C++ abort or signal)",
+            }
+
         results.append(result)
 
         # 每完成一个就写一次 manifest，防止中途断掉后完全没记录
@@ -337,4 +447,5 @@ if __name__ == "__main__":
     main()
 
 
-# python -u scripts/data_prep/02_export_selected_datasets.py 2>&1 | tee data/meta/02_export_selected_datasets.log
+# python -u scripts/data_prep/02_export_selected_datasets.py
+# 日志自动写入 data/meta/02_export_selected_datasets.log，无需手动重定向

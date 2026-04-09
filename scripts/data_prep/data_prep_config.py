@@ -71,6 +71,11 @@ SFT_RECORDS_FULL_V2_JSONL      = SFT_DIR / "sft_records_full_v2.jsonl"
 SFT_MESSAGES_V2_JSONL          = SFT_DIR / "sft_messages_v2.jsonl"
 SFT_MESSAGES_NO_THINK_V2_JSONL = SFT_DIR / "sft_messages_no_think_v2.jsonl"
 
+# 05 v3 → 生成（Phase-A 重构版本，ontology 对齐）
+SFT_RECORDS_FULL_V3_JSONL      = SFT_DIR / "sft_records_full_v3.jsonl"
+SFT_MESSAGES_V3_JSONL          = SFT_DIR / "sft_messages_v3.jsonl"
+SFT_MESSAGES_NO_THINK_V3_JSONL = SFT_DIR / "sft_messages_no_think_v3.jsonl"
+
 # 07 → 生成
 ONTOLOGY_INDEX_JSONL     = KNOWLEDGE_DIR / "ontology_index.jsonl"
 CELL_ONTOLOGY_MIN_JSONL  = RESOURCES_DIR / "ontology" / "cell_ontology_min.jsonl"
@@ -100,10 +105,11 @@ ORGANISM_KEY = "homo_sapiens"   # open_soma() 读取 obs 时的键名
 TARGET_TISSUES = [
     "blood",
     "lung",
-    "liver",
-    "intestine",
     "kidney",
+    "liver",
     "brain",
+    "intestine",
+    "heart",
     "skin",
 ]
 
@@ -111,6 +117,64 @@ TARGET_TISSUES = [
 # =========================================================
 # [01_list_candidate_datasets] 数据集候选筛选规则
 # =========================================================
+
+# =========================================================
+# [01_list_candidate_datasets] 严格数据集筛选规则（Phase-A）
+# =========================================================
+
+# True = 只保留 disease 为 normal 的数据集
+STRICT_NORMAL_ONLY = False
+
+# 一个数据集最多允许涉及的组织数量
+MAX_ALLOWED_N_TISSUES = 3
+
+# 一个数据集最多允许涉及的疾病数量
+MAX_ALLOWED_N_DISEASES = 2
+
+# 包含以下疾病关键词的数据集被排除（匹配 diseases 字段，大小写不敏感）
+EXCLUDE_DISEASE_KEYWORDS: list = [
+    "covid",
+    "cancer",
+    "tumor",
+    "tumour",
+    "glioblastoma",
+    "leukemia",
+    "leukaemia",
+    "adenoma",
+    "carcinoma",
+    "lymphoma",
+    "melanoma",
+    "sarcoma",
+]
+
+# 包含以下关键词的数据集标题被排除（匹配 dataset_title，大小写不敏感）
+EXCLUDE_TITLE_KEYWORDS: list = [
+    "covid",
+    "tumor",
+    "cancer",
+    "glioblastoma",
+    "leukemia",
+    "crispr",
+    "perturbation",
+]
+
+# 包含以下关键词的 collection 名称被排除（大小写不敏感）
+EXCLUDE_COLLECTION_KEYWORDS: list = [
+    "covid",
+    "tumor",
+    "cancer",
+]
+
+# 优先偏好包含以下关键词的数据集（dataset_title 或 collection_name，大小写不敏感）
+PREFER_REFERENCE_KEYWORDS: list = [
+    "atlas",
+    "reference",
+    "census",
+    "landscape",
+    "survey",
+    "map",
+    "compendium",
+]
 
 # 数据集包含的细胞数下限 / 上限
 MIN_DATASET_CELLS = 3_000
@@ -134,16 +198,16 @@ AUTO_SELECT_TOPK_PER_TISSUE = 2
 SELECT_MODE = "auto_balanced"
 
 # 自动模式下，每个 tissue 目标选择的数据集数量
-# 例如 8 表示对 blood/lung/liver/intestine 各自优先选 8 个左右
-AUTO_SELECTED_PER_TISSUE = 12
+# 例如 15 表示对 blood/lung/liver/brain 等各自优先选 15 个左右
+AUTO_SELECTED_PER_TISSUE = 15
 
 # 自动模式下，selected 的全局最大 dataset 数
 # 如果每个 tissue 的目标数量之和去重后仍超过该值，则只保留得分更高的前若干个
-AUTO_SELECTED_MAX_DATASETS = 80
+AUTO_SELECTED_MAX_DATASETS = 150
 
 # 自动模式下，全局最少选择的数据集数量
 # 如果按 tissue 配额选完后仍不足该数量，会从全局候选中继续补齐
-AUTO_SELECTED_MIN_DATASETS = 40
+AUTO_SELECTED_MIN_DATASETS = 60
 
 # 是否优先偏好"单 tissue"数据集
 AUTO_PREFER_SINGLE_TISSUE = True
@@ -162,6 +226,9 @@ AUTO_SCORE_WEIGHT_CELLS = 0.6
 AUTO_SCORE_WEIGHT_SINGLE_TISSUE = 0.8
 AUTO_SCORE_WEIGHT_LOW_DISEASE_MIX = 0.8
 
+# 偏好 atlas/reference 风格数据集的打分权重
+AUTO_SCORE_WEIGHT_REFERENCE = 0.5
+
 # 自动模式下，如果一个 dataset 同时命中多个 tissue，
 # selected_reason 中是否记录所有命中的 tissue
 AUTO_SAVE_MATCHED_TISSUES = True
@@ -176,6 +243,10 @@ EXPORT_MAX_RETRIES = 3
 
 # 相邻两次重试之间的等待时间（秒）
 EXPORT_RETRY_SLEEP_SECONDS = 8
+
+# 单个数据集子进程最长允许运行时间（秒）；超时后强制终止并重试
+# 27GB 大文件在正常网络下约需 1~2 小时，设 7200s 留足余量
+EXPORT_SUBPROCESS_TIMEOUT_SECONDS = 7200
 
 # h5ad 写入压缩格式；None = 不压缩（速度快），"gzip" = 压缩（节省磁盘）
 EXPORT_WRITE_COMPRESSION = None
@@ -217,6 +288,32 @@ AMBIGUOUS_LABEL_KEYWORDS = [
     "debris",
     "artifact",
 ]
+
+
+# =========================================================
+# [03_clean_and_standardize] Ontology 目标标签配置
+# =========================================================
+
+# True = 跳过 ontology 映射率低于阈值的整个数据集
+REQUIRE_ONTOLOGY_MAPPED_DATASET = False
+
+# 数据集级 ontology 映射率下限（仅在 REQUIRE_ONTOLOGY_MAPPED_DATASET=True 时生效）
+MIN_DATASET_MAPPED_RATIO = 0.3
+
+# True = 训练样本只保留 ontology 映射成功的细胞
+REQUIRE_MAPPED_CELL_FOR_TRAIN = False
+
+# 目标标签模式：
+# - "ontology_label"：优先使用 cell_ontology_label（推荐）
+# - "clean"：保持使用 cell_type_clean（旧行为）
+TARGET_LABEL_MODE = "ontology_label"
+
+# True = 当 cell_ontology_label 缺失时，允许 fallback 到 cell_ontology_parent_label
+TARGET_FALLBACK_TO_PARENT = True
+
+# True = 在 clean/parent 均缺失时，最后用 cell_type_source_clean（原始标注）兜底
+# 可以救回 erythroblast / granulocyte 等有效标签，避免它们变成 None 被过滤掉
+TARGET_FALLBACK_TO_SOURCE_CLEAN = True
 
 
 # =========================================================
@@ -310,6 +407,16 @@ SPLIT_TOKEN_CHECK_MODEL = "Qwen/Qwen3-8B"
 
 
 # =========================================================
+# [06_split_and_validate_v2] Study/Collection 级别切分配置
+# =========================================================
+
+# 用于 group 级切分的字段优先级：
+# 优先 collection_doi → 其次 collection_name → 兜底 dataset_id
+SPLIT_GROUP_KEY = "collection_doi"
+SPLIT_GROUP_FALLBACK_KEYS = ["collection_name", "dataset_id"]
+
+
+# =========================================================
 # [06_split_and_validate_v2] V2 划分增强配置
 # =========================================================
 
@@ -371,6 +478,23 @@ SPLIT_V2_NORMAL_SPLIT_MIN_DATASETS = 9
 # Phase 2 benchmark split：全局稀有 cell type 的最大出现次数阈值
 # 跨 train+val+test 合计出现次数 <= 该值的 cell type 视为稀有，进入 test_rare 子集
 SPLIT_V2_RARE_MAX_GLOBAL_COUNT = 3
+
+
+# =========================================================
+# [infer] KB 检索配置
+# =========================================================
+
+# True = 在推理时启用 marker KB 检索并注入候选提示
+USE_MARKER_KB_RETRIEVAL = True
+
+# 检索候选数量（Top-K）
+KB_RETRIEVAL_TOPK = 5
+
+# 组织匹配加成权重
+KB_TISSUE_BONUS = 0.2
+
+# marker 重叠分数的计算权重（对 Jaccard overlap 的放大系数）
+KB_OVERLAP_WEIGHT = 1.0
 
 
 # =========================================================

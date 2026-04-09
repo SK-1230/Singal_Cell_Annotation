@@ -5,24 +5,18 @@ Select mode: auto_balanced
 Target tissues:
 - blood
 - lung
-- liver
-- intestine
 - kidney
-- brain
-- skin
+- liver
 
 Per-tissue fetched rows:
-- blood: rows=25872063, elapsed_sec=94.82
-- lung: rows=5331844, elapsed_sec=22.88
-- liver: rows=1031867, elapsed_sec=9.48
-- intestine: rows=374931, elapsed_sec=12.31
-- kidney: rows=1006588, elapsed_sec=20.78
-- brain: rows=5928920, elapsed_sec=31.06
-- skin: rows=0, elapsed_sec=2.24
+- blood: rows=25872063, elapsed_sec=1414.13
+- lung: rows=5331844, elapsed_sec=410.71
+- kidney: rows=1006588, elapsed_sec=132.36
+- liver: rows=1031867, elapsed_sec=120.20
 
 Dataset stats rows: 1086
-Filtered candidate rows: 123
-Selected rows: 60
+Filtered candidate rows: 67
+Selected rows: 40
 
 candidate_datasets.csv: /data/projects/shuke/code/singal_cell_annotation/data/meta/candidate_datasets.csv
 selected_datasets.csv: /data/projects/shuke/code/singal_cell_annotation/data/meta/selected_datasets.csv

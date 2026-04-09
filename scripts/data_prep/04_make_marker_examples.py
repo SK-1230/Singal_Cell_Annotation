@@ -11,8 +11,8 @@ from typing import Any, Dict, List, Optional
 
 # Must be set before scanpy/numba is imported.
 # scanpy's wilcoxon rankdata uses numba.prange; with 72+ threads and large arrays
-# (n_threads ≈ n_chunk_columns), numba triggers SIGBUS. Limit to a safe value.
-os.environ.setdefault("NUMBA_NUM_THREADS", "8")
+# (n_threads ≈ n_chunk_columns), numba triggers SIGBUS. Force override to a safe value.
+os.environ["NUMBA_NUM_THREADS"] = "4"
 
 import anndata as ad
 import numpy as np
@@ -21,6 +21,11 @@ import scanpy as sc
 from tqdm import tqdm
 
 import data_prep_config as cfg
+
+# Phase-A: use target label for grouping if available
+_TARGET_GROUP_COL = getattr(cfg, "MARKER_TARGET_GROUP_COL", None)
+if _TARGET_GROUP_COL is None:
+    _TARGET_GROUP_COL = "cell_type_target_label" if getattr(cfg, "TARGET_LABEL_MODE", "clean") == "ontology_label" else cfg.MARKER_GROUP_COL
 
 
 # Phase 1 v2: evidence-aware marker extraction
@@ -220,18 +225,21 @@ def extract_markers_v2_for_dataset(adata: ad.AnnData) -> List[dict]:
 
     records: List[dict] = []
 
-    if cfg.MARKER_GROUP_COL not in adata.obs.columns:
+    # Phase-A: determine effective group column
+    group_col = _TARGET_GROUP_COL if _TARGET_GROUP_COL in adata.obs.columns else cfg.MARKER_GROUP_COL
+
+    if group_col not in adata.obs.columns:
         return records
 
-    if adata.obs[cfg.MARKER_GROUP_COL].nunique() < 2:
+    if adata.obs[group_col].nunique() < 2:
         return records
 
     adata_work = adata.copy()
-    adata_work = adata_work[adata_work.obs[cfg.MARKER_GROUP_COL].notna()].copy()
+    adata_work = adata_work[adata_work.obs[group_col].notna()].copy()
     if adata_work.n_obs == 0:
         return records
 
-    adata_work = downsample_per_label(adata_work, cfg.MARKER_GROUP_COL)
+    adata_work = downsample_per_label(adata_work, group_col)
     if adata_work.n_obs == 0:
         return records
 
@@ -245,13 +253,13 @@ def extract_markers_v2_for_dataset(adata: ad.AnnData) -> List[dict]:
     sc.pp.normalize_total(adata_work, target_sum=1e4)
     sc.pp.log1p(adata_work)
 
-    adata_work.obs[cfg.MARKER_GROUP_COL] = adata_work.obs[cfg.MARKER_GROUP_COL].astype("category")
+    adata_work.obs[group_col] = adata_work.obs[group_col].astype("category")
 
     # Phase 1 v2: use wilcoxon
     try:
         sc.tl.rank_genes_groups(
             adata_work,
-            groupby=cfg.MARKER_GROUP_COL,
+            groupby=group_col,
             method=MARKER_DE_METHOD,
             corr_method="benjamini-hochberg",
             n_genes=cfg.MAX_CANDIDATE_MARKERS,
@@ -261,7 +269,7 @@ def extract_markers_v2_for_dataset(adata: ad.AnnData) -> List[dict]:
         logging.warning("wilcoxon DE failed (%r), trying t-test fallback", e)
         sc.tl.rank_genes_groups(
             adata_work,
-            groupby=cfg.MARKER_GROUP_COL,
+            groupby=group_col,
             method="t-test",
             corr_method="benjamini-hochberg",
             n_genes=cfg.MAX_CANDIDATE_MARKERS,
@@ -280,8 +288,8 @@ def extract_markers_v2_for_dataset(adata: ad.AnnData) -> List[dict]:
             pass
 
     total_cells = adata_work.n_obs
-    categories = list(adata_work.obs[cfg.MARKER_GROUP_COL].cat.categories)
-    label_counts_in_ds = adata_work.obs[cfg.MARKER_GROUP_COL].value_counts()
+    categories = list(adata_work.obs[group_col].cat.categories)
+    label_counts_in_ds = adata_work.obs[group_col].value_counts()
 
     for label in categories:
         try:
@@ -294,7 +302,7 @@ def extract_markers_v2_for_dataset(adata: ad.AnnData) -> List[dict]:
             continue
 
         # Build label mask in the working adata
-        label_mask = (adata_work.obs[cfg.MARKER_GROUP_COL].astype(str) == str(label)).values
+        label_mask = (adata_work.obs[group_col].astype(str) == str(label)).values
 
         # Extract positive and negative markers
         positive_markers = extract_positive_markers(
@@ -319,14 +327,13 @@ def extract_markers_v2_for_dataset(adata: ad.AnnData) -> List[dict]:
         )
 
         # Get cell-level info from original adata
-        label_cells = adata.obs[adata.obs[cfg.MARKER_GROUP_COL].astype(str) == str(label)]
+        label_cells = adata.obs[adata.obs[group_col].astype(str) == str(label)]
         n_cells = int(label_cells.shape[0])
 
         # Ontology mapping
         ontology_info: Dict[str, Any] = {}
 
-        if _V2_AVAILABLE and getattr(cfg, "RUN_MARKER_V2", False):
-        # if _V2_AVAILABLE:
+        if True:
             # Check if obs already has ontology cols from 03
             if "cell_ontology_id" in label_cells.columns:
                 ont_id = label_cells["cell_ontology_id"].dropna()
@@ -338,7 +345,7 @@ def extract_markers_v2_for_dataset(adata: ad.AnnData) -> List[dict]:
                 parent = label_cells["cell_ontology_parent_label"].dropna()
                 ontology_info["cell_ontology_parent_label"] = str(parent.iloc[0]) if len(parent) > 0 else None
 
-            if not ontology_info:
+            if not ontology_info and _V2_AVAILABLE:
                 mapped = normalize_and_map(str(label))
                 ontology_info = {
                     "cell_ontology_id": mapped.get("cell_ontology_id"),
@@ -388,6 +395,13 @@ def extract_markers_v2_for_dataset(adata: ad.AnnData) -> List[dict]:
             "avg_padj_top5": avg_padj_top5,
             "marker_quality_score": quality_score,
             "hardness_flags": hardness_flags,
+            # Phase-A: target label fields
+            "cell_type_source_clean": str(label),
+            "cell_type_target_label": str(label_cells["cell_type_target_label"].dropna().iloc[0]) if "cell_type_target_label" in label_cells.columns and len(label_cells["cell_type_target_label"].dropna()) > 0 else None,
+            "cell_type_target_id": str(label_cells["cell_type_target_id"].dropna().iloc[0]) if "cell_type_target_id" in label_cells.columns and len(label_cells["cell_type_target_id"].dropna()) > 0 else None,
+            # Phase-A: study/collection info
+            "collection_name": dataset_meta.get("collection_name"),
+            "collection_doi": dataset_meta.get("collection_doi"),
         }
 
         records.append(record)
